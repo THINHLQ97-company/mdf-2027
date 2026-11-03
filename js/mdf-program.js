@@ -152,7 +152,7 @@
   /* ───────────── Packages / Add-ons ───────────── */
   // list = annual list price; half = half-year price. Early-bird price (5% off) is computed.
   var PACKAGES = [
-    { key: 'silver', list: 900, half: 500, slots: 5, total: 5, features: ['searchSilver', 'aiStandard', 'sharedBoost', 'quarterlyRefresh'] },
+    { key: 'silver', list: 900, half: 500, slots: 4, total: 4, features: ['searchSilver', 'aiStandard', 'sharedBoost', 'quarterlyRefresh'] },
     { key: 'gold', list: 4200, half: 2310, slots: 3, total: 3, popular: true, features: ['searchGold', 'suggestGold', 'vibeGold', 'comboCard', 'boostGold', 'merchGold'], isNew: ['vibeGold', 'comboCard'] },
     { key: 'diamond', list: 6500, half: 3575, slots: 2, total: 2, features: ['searchDiamond', 'suggestDiamond', 'vibeDiamond', 'cartPopup', 'guarantee', 'boostDiamond', 'merchDiamond'], isNew: ['vibeDiamond', 'cartPopup', 'guarantee'] }
   ];
