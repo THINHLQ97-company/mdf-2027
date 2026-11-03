@@ -523,3 +523,5 @@ body.ob-open { overflow: hidden; }
   .t-mdf-program .page-opening::before { background: linear-gradient(0deg, rgba(4, 7, 28, .55) 0%, rgba(4, 7, 28, .2) 50%, rgba(4, 7, 28, .35) 100%); }
   .t-mdf-program .page-about h2 { font-size: 30px; line-height: 38px; }
 }
+
+.t-mdf-program .ob-doc { flex: 1 1 auto; min-height: 0; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }

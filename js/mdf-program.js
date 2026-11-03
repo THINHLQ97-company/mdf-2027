@@ -75,7 +75,10 @@
     return root.querySelector('.mdf-page.active');
   }
 
+  function modalOpen() { var m = document.getElementById('ob-modal'); return m && !m.hidden; }
+
   function onWheel(e) {
+    if (modalOpen()) return;
     if (window.innerWidth <= 900) return;
     if (INTERNAL_SCROLL.indexOf(active) >= 0) {
       var el = activePageEl();
@@ -90,6 +93,7 @@
 
   function onTouchStart(e) { touchStartY = e.touches[0].screenY; }
   function onTouchEnd(e) {
+    if (modalOpen()) return;
     var deltaY = touchStartY - e.changedTouches[0].screenY;
     if (Math.abs(deltaY) < 50) return;
     // Mobile: every slide scrolls internally first; desktop: only packages / comparison.
