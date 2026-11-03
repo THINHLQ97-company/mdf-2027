@@ -1,0 +1,1784 @@
+/* MDF Program 2027 — direct port of /css/landingpage/mdf-2026.css.
+   All selectors scoped under .t-mdf-program; image URLs point to matbao.net CDN.
+   Original layout: body 100vw×100vh, no scroll; #signin_area + #proposal_area
+   float left side-by-side; .pages inside #proposal_area each 100vw×100vh. */
+
+/* ============= Chung ============= */
+.t-mdf-program {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Barlow', Inter, sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+  color: #fff;
+  background-image: url(../images/background.jpg);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: cover;
+}
+.t-mdf-program a { outline: none !important; }
+
+/* Super-thin scrollbar (matches original page) */
+.t-mdf-program ::-webkit-scrollbar { width: 5px; height: 5px; }
+.t-mdf-program ::-webkit-scrollbar-track {
+  -webkit-border-radius: 10px;
+  border-radius: 10px;
+  background: transparent;
+}
+.t-mdf-program ::-webkit-scrollbar-thumb {
+  -webkit-border-radius: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.t-mdf-program ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); }
+.t-mdf-program ::-webkit-scrollbar-thumb:window-inactive { background: rgba(255, 255, 255, 0.12); }
+.t-mdf-program ::selection {
+  background: #22D3EE;
+  color: #fff;
+  text-shadow: 1px 1px 2px #888;
+}
+/* Firefox fallback */
+.t-mdf-program * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+
+.t-mdf-program .center-middle {
+  width: 100vw;
+  display: block;
+  top: 50%;
+  transform: translateY(-50%);
+  position: relative;
+}
+
+.t-mdf-program .mdf-container {
+  width: 1724px;
+  height: 100%;
+  max-width: 100vw;
+  display: block;
+  margin: 0 auto;
+  position: relative;
+  box-sizing: border-box;
+}
+.t-mdf-program .menu-mobile,
+.t-mdf-program .social-mobile,
+.t-mdf-program .only-mobi { display: none; }
+.t-mdf-program .logo-page.only-mobi { display: none; }
+
+.t-mdf-program #signin_area,
+.t-mdf-program #proposal_area {
+  position: relative;
+  float: left;
+  width: 100vw;
+  height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.t-mdf-program .cursor-scroll {
+  display: block;
+  box-sizing: border-box;
+  width: 160px;
+  height: 80px;
+  padding-top: 56px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  white-space: nowrap;
+  text-align: center;
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  background: url(../images/scroll.svg) top center no-repeat;
+  background-size: 20px;
+  color: #FFF;
+  transition: all .4s ease-in-out;
+}
+
+.t-mdf-program #proposal_area .pages {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  float: left;
+  position: relative;
+}
+/* Slide-deck show/hide — only the .active slide is rendered */
+.t-mdf-program .mdf-page {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+.t-mdf-program .mdf-page.mdf-page--scroll { overflow-y: auto; }
+.t-mdf-program .mdf-page.active { display: block; }
+.t-mdf-program .mdf-page > .mdf-container { padding-top: 120px; padding-bottom: 80px; }
+.t-mdf-program #proposal_area .pages .p-content {
+  display: block;
+  position: relative;
+  z-index: 1;
+  padding-top: 43px;
+  width: calc(100% - 300px);
+  height: 100vh;
+  max-height: calc(100vh - 50px);
+  color: #FFF;
+}
+.t-mdf-program #proposal_area .pages .bg-door {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: calc(100vw - 358px);
+  height: 100vh;
+  /* bg-second-screen.svg: file does not exist on the CDN (404) — dropped; the overlay colour below is unchanged */
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px) !important;
+}
+
+/* ============= Opening effects ============= */
+.t-mdf-program .mb-animate,
+.t-mdf-program .mb-x-animate {
+  opacity: 0;
+  transition: all 1s ease-in-out;
+}
+.t-mdf-program .mb-animate.mb-init { opacity: 1; }
+.t-mdf-program .mb-fade-in.mb-init { animation: mdf-fade-in 1s forwards; }
+.t-mdf-program .mb-zoom-in.mb-init { animation: mdf-zoom-in 1s forwards; transform-origin: center; }
+.t-mdf-program .mb-fade-up.mb-init { transform: translateY(50px); animation: mdf-fade-up 1s forwards; }
+.t-mdf-program .mb-fade-down.mb-init { transform: translateY(-50px); animation: mdf-fade-down 1s forwards; }
+.t-mdf-program .mb-fade-left.mb-init { transform: translateX(-50px); animation: mdf-fade-left 1s forwards; }
+.t-mdf-program .mb-fade-right.mb-init { transform: translateX(50px); animation: mdf-fade-right 1s forwards; }
+.t-mdf-program .mb-zoom-out.mb-init { animation: mdf-zoom-out 1s forwards; transform-origin: center; }
+@keyframes mdf-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes mdf-zoom-in { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes mdf-zoom-out { from { transform: scale(1); opacity: 1; } to { transform: scale(0.5); opacity: 0; } }
+@keyframes mdf-fade-up { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes mdf-fade-down { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes mdf-fade-left { from { transform: translateX(-50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes mdf-fade-right { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* ===== Slide entrance animations — re-fire when .mdf-page becomes .active ===== */
+.t-mdf-program .mdf-page.active h1,
+.t-mdf-program .mdf-page.active h2,
+.t-mdf-program .mdf-page.active .desc,
+.t-mdf-program .mdf-page.active .title-countdown,
+.t-mdf-program .mdf-page.active .intro-content .right .btn,
+.t-mdf-program .mdf-page.active hr,
+.t-mdf-program .mdf-page.active .mirror ul li,
+.t-mdf-program .mdf-page.active .group > .item,
+.t-mdf-program .mdf-page.active .border-table,
+.t-mdf-program .mdf-page.active .form-box > .form,
+.t-mdf-program .mdf-page.active .form-box > .box {
+  opacity: 0;
+  animation: mdf-fade-up 0.8s ease-out forwards;
+}
+
+/* Stagger delays */
+.t-mdf-program .mdf-page.active h1,
+.t-mdf-program .mdf-page.active h2 { animation-delay: 0.1s; }
+.t-mdf-program .mdf-page.active .desc { animation-delay: 0.25s; }
+.t-mdf-program .mdf-page.active hr { animation-delay: 0.3s; }
+.t-mdf-program .mdf-page.active .title-countdown { animation-delay: 0.35s; }
+.t-mdf-program .mdf-page.active .intro-content .right .btn { animation-delay: 0.55s; }
+.t-mdf-program .mdf-page.active .border-table { animation-delay: 0.3s; }
+.t-mdf-program .mdf-page.active .form-box > .form { animation-delay: 0.25s; }
+.t-mdf-program .mdf-page.active .form-box > .box { animation-delay: 0.45s; }
+.t-mdf-program .mdf-page.active .group > .item:nth-child(1),
+.t-mdf-program .mdf-page.active .mirror ul li:nth-child(1) { animation-delay: 0.4s; }
+.t-mdf-program .mdf-page.active .group > .item:nth-child(2),
+.t-mdf-program .mdf-page.active .mirror ul li:nth-child(2) { animation-delay: 0.55s; }
+.t-mdf-program .mdf-page.active .group > .item:nth-child(3),
+.t-mdf-program .mdf-page.active .mirror ul li:nth-child(3) { animation-delay: 0.7s; }
+
+/* ============= Login ============= */
+.t-mdf-program .login-page {
+  width: 820px;
+  height: 100px;
+  max-width: calc(100vw - 32px);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+  background: linear-gradient(130deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  justify-content: space-between;
+  overflow: visible;
+  border-radius: 16px;
+  padding: 10px 12px;
+  margin: 0 auto;
+}
+.t-mdf-program .login-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 3px;
+  background: linear-gradient(130deg, #3b6dff33, #9ee9e900, #8a3bff2b);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  box-shadow:
+    0 -2px 16px 0 rgba(255, 255, 255, 0.33) inset,
+    -4px -4px 16px 0 rgba(255, 255, 255, 0.18) inset;
+  z-index: -1;
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+}
+.t-mdf-program .login-page .txt {
+  background: none;
+  border: none;
+  outline: none;
+  width: calc(100% - 200px);
+  padding: 18px 12px;
+  color: #D6F0FF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+}
+.t-mdf-program .login-page .txt::placeholder { color: #D6F0FF; opacity: 1; }
+.t-mdf-program .login-page .btn {
+  display: block;
+  width: 155px;
+  padding: 26px 42px;
+  color: #14205C;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.20);
+  background-blend-mode: plus-lighter;
+  box-sizing: border-box;
+  border: none;
+  cursor: pointer;
+  font-family: Poppins, Inter, sans-serif;
+}
+.t-mdf-program .login-page .btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px) !important;
+}
+
+.t-mdf-program .logo-page {
+  display: block;
+  position: absolute;
+  top: 80px;
+  left: 0;
+  width: 100%;
+  height: 52px;
+  background: url(../images/Logo-MB.svg) center / contain no-repeat;
+}
+
+.t-mdf-program .error {
+  position: fixed;
+  right: 10px;
+  padding: 10px 16px;
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #ea4649;
+  box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ============= Top menu (sticky pill) ============= */
+.t-mdf-program .topmenu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 863px;
+  height: 67px;
+  z-index: 100;
+  padding: 4px;
+  border-radius: 104px;
+  box-sizing: border-box;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+}
+.t-mdf-program .topmenu::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 863px;
+  height: 67px;
+  padding: 8px;
+  border-radius: 104px;
+  border: 3px solid rgba(255, 255, 255, 0.70);
+  opacity: 0.3;
+  box-sizing: border-box;
+  mix-blend-mode: plus-lighter;
+}
+.t-mdf-program .topmenu ul {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  gap: 0;
+  position: relative;
+  list-style: none;
+}
+.t-mdf-program .topmenu ul li {
+  cursor: pointer;
+  padding: 12px 20px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+.t-mdf-program .topmenu ul li:hover {
+  border-radius: 50px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+.t-mdf-program .topmenu ul li.active {
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.20);
+}
+/* Mobile menu toggle — ẩn trên desktop, chỉ hiện ở @media ≤ 900px */
+.t-mdf-program .topmenu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.t-mdf-program .socialmenu {
+  display: flex;
+  position: fixed;
+  right: 100px;
+  top: 30px;
+  gap: 24px;
+  z-index: 100;
+}
+.t-mdf-program .socialmenu .item {
+  display: block;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+}
+.t-mdf-program .socialmenu .item::before {
+  border-radius: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.70);
+  opacity: 0.3;
+  mix-blend-mode: plus-lighter;
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+.t-mdf-program .socialmenu .item.earth {
+  background: url(../images/earth.svg) center / contain no-repeat;
+}
+.t-mdf-program .socialmenu .item.mxh-f {
+  background: url(../images/mxh-f.svg) center / contain no-repeat;
+}
+.t-mdf-program .socialmenu .item.youtube {
+  background: url(../images/youtube.svg) center / contain no-repeat;
+}
+.t-mdf-program .socialmenu .item.mxh-in {
+  background: url(../images/mxh-in.svg) center / contain no-repeat;
+}
+
+/* ============= Intro / hero ============= */
+.t-mdf-program .page-opening::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(6, 10, 38, 0) 0%, #060a26 100%);
+  position: absolute;
+  z-index: -1;
+  bottom: 0;
+}
+.t-mdf-program .intro-content {
+  width: 100%;
+  height: 280px;
+  position: fixed;
+  bottom: 240px;
+}
+.t-mdf-program .intro-content .mdf-container {
+  display: flex;
+  justify-content: space-between;
+}
+.t-mdf-program .intro-content .left h1 {
+  margin: 0;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 80px;
+  font-weight: 600;
+  line-height: 100px;
+  width: 801px;
+  position: relative;
+}
+.t-mdf-program .intro-content .left h1 .text {
+  position: relative;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  z-index: 2;
+}
+/* Stack .shadow text absolutely behind .main for all gradient-title sections */
+.t-mdf-program .benfefit h2 .shadow,
+.t-mdf-program .packages h2 .shadow,
+.t-mdf-program .mirror .mdf-container .one h2 .shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+.t-mdf-program .page-about h2 .shadow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  z-index: -1;
+  transform: translateX(-50%);
+}
+.t-mdf-program .intro-content .left h1 .shadow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, rgba(127, 231, 255, 0.30) 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: blur(2px);
+}
+.t-mdf-program .intro-content .left h1::before {
+  width: 100%;
+  height: 52px;
+  content: '';
+  display: block;
+  margin-bottom: 28px;
+  background: url(../images/Logo.svg) top left / contain no-repeat;
+}
+
+/* Countdown */
+.t-mdf-program .title-countdown strong {
+  display: block;
+  color: #FFF;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.t-mdf-program .title-countdown:not(.right-countdown) {
+  position: relative;
+  display: block;
+  width: 484px;
+  color: #FFF;
+  text-align: center;
+}
+.t-mdf-program .title-countdown .time-countdown {
+  display: inline-block;
+  text-align: center;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 45px;
+  line-height: 38px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .title-countdown .time-countdown u {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  text-shadow: 0 8px 16px rgba(0, 0, 0, 0.10);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 60px;
+  font-weight: 500;
+  line-height: 1;
+}
+.t-mdf-program .title-countdown .time-countdown u i {
+  margin-bottom: 8px;
+}
+.t-mdf-program .title-countdown .time-countdown i {
+  display: block;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  text-transform: uppercase;
+  font-style: normal;
+}
+.t-mdf-program .intro-content .right .btn {
+  display: block;
+  width: 313px;
+  height: 75px;
+  padding: 20px;
+  margin: 20px auto 0;
+  color: #FFF;
+  text-align: center;
+  font-family: "Albert Sans", Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+  box-sizing: border-box;
+  border-radius: 104px;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+  cursor: pointer;
+  border: none;
+}
+.t-mdf-program .intro-content .right .btn:hover { background-color: rgba(255, 255, 255, 0.12); }
+.t-mdf-program .intro-content .right .btn::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 75px;
+  padding: 20px;
+  border-radius: 104px;
+  border: 3px solid rgba(255, 255, 255, 0.70);
+  opacity: 0.3;
+  box-sizing: border-box;
+  mix-blend-mode: plus-lighter;
+}
+
+/* ============= Mirror (intro 3-col) ============= */
+.t-mdf-program .mirror {
+  display: block;
+  width: 100%;
+  height: 740px;
+  position: absolute;
+  bottom: 0;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+}
+.t-mdf-program .mirror::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  border-top: 3px solid rgba(255, 255, 255, 0.70);
+  opacity: 0.3;
+  box-sizing: border-box;
+  mix-blend-mode: plus-lighter;
+}
+.t-mdf-program .mirror::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(6, 10, 38, 0) 0%, #060a26 100%);
+  position: absolute;
+  z-index: -2;
+  bottom: 0;
+}
+.t-mdf-program .mirror .mdf-container .one {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 52px;
+}
+.t-mdf-program .mirror .mdf-container .one h2 {
+  margin: 0;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: normal;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+.t-mdf-program .mirror .mdf-container .one h2 em {
+  display: block;
+  font-style: normal;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .mirror .mdf-container .one .desc {
+  color: #FFF;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.10);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 500;
+}
+.t-mdf-program .mirror .mdf-container hr {
+  border: none;
+  border-top: solid 1px #E3E3E3;
+  margin: 36px 0 48px;
+}
+.t-mdf-program .mirror .mdf-container ul {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  gap: 81px;
+}
+.t-mdf-program .mirror .mdf-container ul li { width: calc(33.3% - 40px); }
+.t-mdf-program .mirror .mdf-container ul li b {
+  display: block;
+  padding-top: 32px;
+  color: #FFF;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.10);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.t-mdf-program .mirror .mdf-container ul li span {
+  display: block;
+  width: 80%;
+  color: #FFF;
+  text-align: justify;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.10);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+.t-mdf-program .mirror .mdf-container ul li:nth-child(1) b {
+  background: url(../images/info_1.svg) left top / 20px no-repeat;
+}
+.t-mdf-program .mirror .mdf-container ul li:nth-child(2) b {
+  background: url(../images/info_2.svg) left top / 20px no-repeat;
+}
+.t-mdf-program .mirror .mdf-container ul li:nth-child(3) b {
+  background: url(../images/info_3.svg) left top / 20px no-repeat;
+}
+
+/* ============= Benefit ============= */
+.t-mdf-program .benfefit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(5px) saturate(1.05) !important;
+  background: rgba(0, 0, 0, 0.18);
+}
+.t-mdf-program .benfefit::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(6, 10, 38, 0) 0%, #060a26 100%);
+  position: absolute;
+  z-index: -2;
+  bottom: 0;
+}
+.t-mdf-program .benfefit h2 {
+  width: 50%;
+  margin-top: 147px;
+  margin-bottom: 40px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 80px;
+  text-transform: uppercase;
+  position: relative;
+}
+.t-mdf-program .benfefit h2 .main {
+  z-index: 2;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .benfefit .group { display: flex; gap: 32px; }
+.t-mdf-program .benfefit .group .item {
+  width: 33.3%;
+  border-radius: 12px;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+  padding: 24px;
+}
+.t-mdf-program .benfefit .group .item::before {
+  border-radius: 8px;
+  border: 3px solid rgba(255, 255, 255, 0.70);
+  opacity: 0.3;
+  mix-blend-mode: plus-lighter;
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+.t-mdf-program .benfefit .group .item img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.t-mdf-program .benfefit .group .item b {
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+.t-mdf-program .benfefit .group .item span {
+  color: #FFF;
+  display: block;
+  margin-bottom: 12px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  min-height: 96px;
+}
+.t-mdf-program .benfefit .group .item a {
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* ============= Packages ============= */
+.t-mdf-program .page-packages { overflow-y: auto; }
+.t-mdf-program .page-packages::before {
+  content: '';
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  background: rgba(0, 0, 0, 0.18);
+}
+.t-mdf-program .packages { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.t-mdf-program .packages .mdf-container { width: 1260px; }
+.t-mdf-program .packages h2 {
+  width: 50%;
+  margin-top: 147px;
+  margin-bottom: 4px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 60px;
+  text-transform: uppercase;
+  position: relative;
+}
+.t-mdf-program .packages h2 .main {
+  z-index: 2;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .packages h2 + .desc {
+  display: block;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 36px;
+  margin-bottom: 40px;
+}
+.t-mdf-program .packages .group { display: flex; gap: 52px; margin-bottom: 36px; }
+.t-mdf-program .packages .group .item {
+  width: 33.3%;
+  min-height: 632px;
+  box-sizing: border-box;
+  padding: 40px 20px 32px;
+  border-radius: 20px;
+  position: relative;
+}
+.t-mdf-program .packages .group .item::before {
+  content: '';
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  z-index: -1;
+  border-radius: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.22);
+}
+.t-mdf-program .packages .group .item.silver {
+  background: linear-gradient(180deg, #E8E8E8 0%, rgba(0, 0, 0, 0.50) 100%);
+}
+.t-mdf-program .packages .group .item.gold {
+  background: linear-gradient(180deg, #FFE770 0%, rgba(0, 0, 0, 0.40) 100%);
+}
+.t-mdf-program .packages .group .item.diamond {
+  background: linear-gradient(180deg, #ADD2F4 0%, rgba(0, 0, 0, 0.40) 100%);
+}
+.t-mdf-program .packages .group .item.gold .hot {
+  width: 127px;
+  height: 38px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #4F6BFF 0%, #3B1E9A 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .packages .group .item.gold .hot::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  background: url(../images/Focus.png) center / contain no-repeat;
+}
+.t-mdf-program .packages .group .item > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+}
+.t-mdf-program .packages .group .item > strong + .desc {
+  display: block;
+  margin-bottom: 20px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.t-mdf-program .packages .group .item > s {
+  display: block;
+  color: rgba(255, 255, 255, 0.97);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  text-decoration-line: line-through;
+}
+.t-mdf-program .packages .group .item > b {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.97);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 56px;
+}
+.t-mdf-program .packages .group .item > b > i {
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  font-style: normal;
+}
+.t-mdf-program .packages .group .item > u {
+  display: block;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.97);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+  margin-bottom: 24px;
+}
+.t-mdf-program .packages .group .item > .cta {
+  display: block;
+  padding: 16px;
+  margin-bottom: 32px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  background: linear-gradient(90deg, #4F6BFF 0%, #3B1E9A 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  cursor: pointer;
+  border: none;
+}
+.t-mdf-program .packages .group .item > .cta::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+}
+.t-mdf-program .packages .group .item > ul {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.t-mdf-program .packages .group .item > ul li {
+  display: block;
+  width: fit-content;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  padding-left: 36px;
+  background: url(../images/check_white.svg) left center no-repeat;
+}
+.t-mdf-program .packages .group .item > ul li.new::after {
+  display: inline-block;
+  content: 'NEW';
+  border-radius: 4px;
+  background: linear-gradient(90deg, #4F6BFF 0%, #3B1E9A 100%);
+  height: 20px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  text-align: center;
+  color: #FFF;
+  font-size: 12px;
+  font-weight: 700;
+}
+.t-mdf-program .packages .group .item > .note {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+}
+.t-mdf-program .packages .addon {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0 auto;
+  height: 40px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 28px;
+  padding-left: 56px;
+  background: url(../images/plus.svg) left center / contain no-repeat;
+  cursor: pointer;
+  border: none;
+}
+
+/* ============= Comparison table ============= */
+.t-mdf-program .page-comparison { overflow-x: hidden; overflow-y: auto; }
+.t-mdf-program .page-comparison::before {
+  content: '';
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  background: rgba(0, 0, 0, 0.48);
+}
+.t-mdf-program .border-table {
+  border-radius: 36px;
+  background: rgba(255, 255, 255, 0.01);
+  box-shadow:
+    0 -2px 16px 0 rgba(255, 255, 255, 0.06) inset,
+    -4px -4px 16px 0 rgba(255, 255, 255, 0.18) inset;
+  width: 1498px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 32px;
+  margin: 163px auto 0;
+}
+.t-mdf-program .border-table table {
+  color: #FFF;
+  width: 100%;
+  padding: 0 60px;
+  text-align: center;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+  border-spacing: 0;
+  border-radius: 20px;
+  background: rgba(16, 16, 16, 0.30);
+}
+.t-mdf-program .border-table table thead th {
+  padding: 24px 20px;
+  text-align: center;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  background: linear-gradient(90deg, #7FE7FF 0%, #E3F6FF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .border-table table thead tr:first-child th { font-size: 24px; }
+.t-mdf-program .border-table table td { padding: 20px; box-shadow: 0 0.5px 0 #eee; }
+.t-mdf-program .border-table table td.row-title { padding-left: 0; font-weight: 600; text-align: left; }
+.t-mdf-program .border-table table td[colspan="4"] {
+  text-align: left;
+  padding-left: 36px;
+  padding-top: 48px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+}
+.t-mdf-program .matbao-cancel-red,
+.t-mdf-program .matbao-check-ok {
+  display: block;
+  margin: 0 auto;
+  width: 20px;
+  height: 20px;
+}
+.t-mdf-program .matbao-check-ok {
+  background: url(../images/check.svg) center no-repeat;
+}
+.t-mdf-program .matbao-cancel-red {
+  background: url(../images/cancel.svg) center no-repeat;
+}
+
+/* ============= About ============= */
+.t-mdf-program .page-about {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(5px) saturate(1.05) !important;
+  background: rgba(0, 0, 0, 0.18);
+}
+.t-mdf-program .page-about .mdf-container { width: 1600px; max-width: 100%; }
+.t-mdf-program .page-about h2 {
+  width: 100%;
+  margin-top: 147px;
+  margin-bottom: 12px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 80px;
+  text-transform: uppercase;
+  position: relative;
+  text-align: center;
+  white-space: nowrap;
+}
+.t-mdf-program .page-about h2 .main {
+  z-index: 2;
+  background: linear-gradient(90deg, #7FE7FF 0%, #FFF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.t-mdf-program .page-about h2 + .desc {
+  display: block;
+  margin-bottom: 52px;
+  color: #FFF;
+  text-align: center;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 36px;
+}
+.t-mdf-program .page-about .group { display: flex; gap: 48px; }
+.t-mdf-program .page-about .group .item {
+  width: 33.3%;
+  border-radius: 12px;
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+  padding: 20px;
+}
+.t-mdf-program .page-about .group .item img {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.t-mdf-program .page-about .group .item b {
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+.t-mdf-program .page-about .group .item span {
+  color: #FFF;
+  display: block;
+  margin-bottom: 12px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  min-height: 48px;
+}
+.t-mdf-program .page-about .group .item .icon {
+  display: flex;
+  align-items: center;
+  color: #FFF;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  position: relative;
+}
+
+/* ============= Form ============= */
+.t-mdf-program .page-form {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(5px) saturate(1.05) !important;
+  background: rgba(0, 0, 0, 0.18);
+}
+.t-mdf-program .form-box {
+  display: flex;
+  gap: 32px;
+  margin-top: 32px;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.t-mdf-program .form-box .form {
+  width: 50%;
+  padding: 40px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  background: linear-gradient(130deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)), rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(40px) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+.t-mdf-program .form-box .box {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.t-mdf-program .form-box .box .item {
+  width: 100%;
+  padding: 32px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  background: linear-gradient(130deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  backdrop-filter: blur(10px) saturate(1.05) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 3px 6px 20px rgba(0, 0, 0, 0.25),
+    inset -3px -6px 8px rgba(120, 175, 255, 0.41);
+  position: relative;
+}
+.t-mdf-program .form-box .box .item strong {
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  display: block;
+  margin-bottom: 16px;
+}
+.t-mdf-program .form-box .box .item .timeline {
+  padding-left: 32px;
+  margin: 0;
+  list-style: none;
+  background: url(../images/timeline.svg) left center / 20px no-repeat;
+}
+.t-mdf-program .form-box .box .item .timeline li:not(:last-child) { margin-bottom: 16px; }
+.t-mdf-program .form-box .box .item .flex {
+  display: flex;
+  gap: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.20);
+  padding: 16px;
+}
+.t-mdf-program .form-box .box .item .flex .contact { list-style: none; padding-left: 0; margin: 0; }
+.t-mdf-program .form-box .box .item .flex .contact li { padding-left: 52px; }
+.t-mdf-program .form-box .box .item .flex .contact li:not(:last-child) { margin-bottom: 20px; }
+.t-mdf-program .form-box .box .item .flex .contact li.email {
+  background: url(../images/mail.svg) 10px center / 24px no-repeat;
+}
+.t-mdf-program .form-box .box .item .flex .contact li.skype {
+  background: url(../images/whatapp.svg) 10px center / 24px no-repeat;
+}
+.t-mdf-program .form-box .box .item .flex .contact li.phone {
+  background: url(../images/phone.svg) 10px center / 24px no-repeat;
+}
+.t-mdf-program .form-box .box .item .flex .contact li b { display: block; margin-bottom: 4px; }
+.t-mdf-program .form-box .cta-w,
+.t-mdf-program .form-box .cta-p {
+  width: 192px;
+  padding: 20px 10px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background: #4F6BFF;
+  float: right;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  color: #FFF;
+  border: none;
+}
+.t-mdf-program .form-box .cta-w {
+  border: 1.5px solid #4F6BFF;
+  color: #4F6BFF;
+  margin-right: 16px;
+  background-color: transparent;
+}
+.t-mdf-program .formrow { margin-bottom: 32px; }
+.t-mdf-program .formrow .label {
+  display: block;
+  margin-bottom: 16px;
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+.t-mdf-program .formrow input[type="text"],
+.t-mdf-program .formrow input[type="email"] {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.30);
+  color: #FFF;
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 28px;
+}
+.t-mdf-program .formrow input[type="text"]::placeholder,
+.t-mdf-program .formrow input[type="email"]::placeholder {
+  color: #D3D3D3;
+  font-family: Poppins, Inter, sans-serif;
+  opacity: 1;
+}
+.t-mdf-program .tabNumber { display: flex; width: 100%; position: relative; margin-bottom: 32px; }
+.t-mdf-program .tabNumber a:not(:last-child) {
+  background: url(../images/icons.svg) 100% center / 20px no-repeat;
+  padding: 8px 32px 8px 8px;
+}
+.t-mdf-program .tabNumber a:last-child { padding: 8px 16px 8px 8px; }
+.t-mdf-program .tabNumber a i {
+  width: 28px;
+  height: 28px;
+  font-style: normal;
+  display: inline-block;
+  margin-right: 8px;
+  text-align: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.20);
+  color: #FFF;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 28px;
+}
+.t-mdf-program .tabNumber a.active i { background: #4F6BFF; }
+.t-mdf-program .tabNumber a {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: default;
+}
+.t-mdf-program .tabNumber a.active { color: #FFF; font-weight: 600; }
+
+/* Custom radio / checkbox bên trong .form */
+.t-mdf-program .form-box .form input[type="radio"],
+.t-mdf-program .form-box .form input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  margin: 0 12px 0 0;
+  vertical-align: middle;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.t-mdf-program .form-box .form input[type="checkbox"] { border-radius: 4px; }
+.t-mdf-program .form-box .form input[type="radio"]:checked {
+  border-color: #4F6BFF;
+  background: radial-gradient(circle, #4F6BFF 45%, transparent 50%);
+}
+.t-mdf-program .form-box .form input[type="checkbox"]:checked {
+  border-color: #4F6BFF;
+  background: #4F6BFF;
+}
+.t-mdf-program .form-box .form input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #FFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Yes / No inline labels (step 1) */
+.t-mdf-program .formrow label[for] {
+  display: inline-flex;
+  align-items: center;
+  color: #FFF;
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  margin-right: 32px;
+  cursor: pointer;
+}
+
+/* Plan radio list (step 2) & Add-on check list (step 3) */
+.t-mdf-program .form-box .form ul.radio,
+.t-mdf-program .form-box .form ul.check {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px 0;
+}
+.t-mdf-program .form-box .form ul.radio li,
+.t-mdf-program .form-box .form ul.check li {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.t-mdf-program .form-box .form ul.radio li:hover,
+.t-mdf-program .form-box .form ul.check li:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.t-mdf-program .form-box .form ul.radio li label,
+.t-mdf-program .form-box .form ul.check li label {
+  flex: 1;
+  color: #FFF;
+  font-family: Inter, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  cursor: pointer;
+}
+.t-mdf-program .form-box .form ul.radio li label b,
+.t-mdf-program .form-box .form ul.check li label b {
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+/* Success screen */
+.t-mdf-program .form-box .fpage.success {
+  text-align: center;
+  padding: 32px 8px;
+}
+.t-mdf-program .form-box .fpage.success strong {
+  display: block;
+  margin-bottom: 16px;
+  font-family: Poppins, Inter, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #7FE7FF;
+}
+.t-mdf-program .form-box .fpage.success p {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 26px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.t-mdf-program .form-box .fpage.success p b { color: #FFF; }
+
+/* Clearfix sau khi 2 cta float */
+.t-mdf-program .form-box .form::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+/* ============= Responsive ============= */
+@media (max-width: 1600px) {
+  .t-mdf-program .topmenu { left: 100px; transform: none; }
+  .t-mdf-program .mdf-container {
+    max-width: calc(100vw - 32px);
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+@media (max-width: 1340px) {
+  .t-mdf-program .topmenu { left: 16px; transform: none; }
+  .t-mdf-program .socialmenu { right: 16px; }
+  .t-mdf-program .intro-content .left h1 { font-size: 64px; line-height: 82px; width: auto; }
+  .t-mdf-program .benfefit h2 { width: 100%; }
+}
+@media (max-width: 1200px) {
+  .t-mdf-program .login-page { flex-direction: column; height: auto; }
+  .t-mdf-program .login-page .txt,
+  .t-mdf-program .login-page .btn { width: 100%; }
+  .t-mdf-program .intro-content .left h1 { font-size: 52px; line-height: 60px; }
+  .t-mdf-program .packages .group { gap: 32px; }
+}
+@media (max-width: 992px) {
+  .t-mdf-program .topmenu { width: calc(100% - 240px); overflow: hidden; }
+  .t-mdf-program .intro-content { height: 392px; }
+  .t-mdf-program .intro-content .mdf-container { flex-direction: column; text-align: center; gap: 32px; }
+  .t-mdf-program .mirror .mdf-container .one h2,
+  .t-mdf-program .benfefit h2 { font-size: 40px; line-height: 52px; margin-bottom: 8px; }
+  .t-mdf-program .packages .mdf-container { padding-bottom: 50px; }
+  .t-mdf-program .packages .group { gap: 16px; align-items: center; }
+}
+@media (max-width: 900px) {
+  /* Mobile: vẫn slide-deck per màn hình. Mỗi slide overflow-y:auto cho content dài.
+     Swipe up/down ở mép trên/dưới mới chuyển slide (giống wheel desktop). */
+  .t-mdf-program { font-size: 16px; }
+  .t-mdf-program .mdf-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+  .t-mdf-program .mdf-page {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Mỗi section tự quản padding-top/bottom, mdf-container không cần thêm */
+  .t-mdf-program .mdf-page .mdf-container {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  /* Hero giữ padding nhỏ hơn vì content tự center */
+  .t-mdf-program .page-opening .mdf-container { padding-top: 24px; padding-bottom: 24px; }
+
+  /* Dark overlay cho hero readable trên mobile */
+  .t-mdf-program::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 35%, rgba(0,0,0,0.6) 100%);
+    z-index: 0;
+  }
+
+  /* Topmenu thành toggle dropdown */
+  .t-mdf-program .topmenu {
+    top: 12px;
+    left: 16px;
+    transform: none;
+    width: auto;
+    height: auto;
+    max-width: calc(100% - 180px);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    border-radius: 32px;
+    overflow: hidden;
+  }
+  .t-mdf-program .topmenu::before { display: none; }
+  .t-mdf-program .topmenu-toggle {
+    display: block;
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+  /* Mặc định ẩn list; chỉ hiện khi .open */
+  .t-mdf-program .topmenu ul {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    padding: 4px;
+    gap: 2px;
+  }
+  .t-mdf-program .topmenu.open { border-radius: 18px; }
+  .t-mdf-program .topmenu.open ul { display: flex; }
+  .t-mdf-program .topmenu ul li {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  /* Socialmenu nhỏ lại */
+  .t-mdf-program .socialmenu {
+    top: 16px;
+    right: 12px;
+    transform: none;
+    display: flex;
+    gap: 6px;
+    flex-direction: row;
+  }
+  .t-mdf-program .socialmenu .item { width: 32px; height: 32px; background-size: 16px; }
+
+  /* Hero */
+  .t-mdf-program .intro-content {
+    height: auto;
+    min-height: auto;
+    padding-top: 24px;
+  }
+  .t-mdf-program .intro-content .mdf-container {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 32px;
+    align-items: center;
+  }
+  .t-mdf-program .intro-content .left h1 {
+    font-size: 36px;
+    line-height: 44px;
+    width: auto;
+    text-align: center;
+  }
+  .t-mdf-program .intro-content .left h1::before { margin: 0 auto 16px; background-position: center; }
+  .t-mdf-program .intro-content .right { width: 100%; }
+  .t-mdf-program .title-countdown:not(.right-countdown) { width: 100%; max-width: 360px; margin: 0 auto; }
+  .t-mdf-program .title-countdown strong { font-size: 18px; letter-spacing: 0.3px; }
+  .t-mdf-program .title-countdown .time-countdown { font-size: 28px; }
+  .t-mdf-program .title-countdown .time-countdown u { font-size: 40px; }
+  .t-mdf-program .intro-content .right .btn { width: 100%; max-width: 280px; font-size: 18px; padding: 14px; }
+
+  /* Section headings */
+  .t-mdf-program .mirror .mdf-container .one h2,
+  .t-mdf-program .benfefit h2,
+  .t-mdf-program .packages h2,
+  .t-mdf-program .page-about h2 {
+    font-size: 28px;
+    line-height: 36px;
+    width: 100%;
+    margin-top: 0;
+    margin-bottom: 8px;
+    white-space: normal;
+  }
+  .t-mdf-program .mirror .mdf-container .one .desc,
+  .t-mdf-program .page-about h2 + .desc,
+  .t-mdf-program .packages h2 + .desc {
+    font-size: 14px;
+    line-height: 22px;
+    margin-bottom: 24px;
+  }
+
+  /* Intro .one: stack title + desc dọc (desktop là flex row) */
+  .t-mdf-program .mirror .mdf-container .one {
+    display: block;
+    padding-top: 24px;
+  }
+  .t-mdf-program .mirror .mdf-container .one h2 em {
+    font-size: 22px;
+    line-height: 28px;
+    margin-bottom: 4px;
+  }
+  .t-mdf-program .mirror .mdf-container .one .desc {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+  .t-mdf-program .mirror .mdf-container hr { margin: 20px 0 24px; }
+  .t-mdf-program .mirror .mdf-container ul li b { padding-top: 28px; font-size: 18px; margin-bottom: 8px; }
+  .t-mdf-program .mirror .mdf-container ul li span { width: 100%; font-size: 14px; line-height: 22px; }
+
+  /* Section paddings để tránh menu + thở dưới */
+  .t-mdf-program .benfefit { background: none; height: auto; padding: 64px 0 20px; }
+  .t-mdf-program .packages { padding: 64px 0 20px; }
+  .t-mdf-program .page-about,
+  .t-mdf-program .page-form {
+    padding: 64px 0 20px;
+    overflow: auto;
+    position: relative;
+    top: 0;
+    left: 0;
+  }
+  .t-mdf-program .mdf-page.active .border-table { margin-top: 64px; }
+
+  /* .shadow text behind gradient titles — bỏ box-shadow */
+  .t-mdf-program .benfefit h2 .shadow,
+  .t-mdf-program .packages h2 .shadow,
+  .t-mdf-program .page-about h2 .shadow,
+  .t-mdf-program .mirror .mdf-container .one h2 .shadow { box-shadow: none; }
+
+  /* Stack tất cả group thành 1 cột */
+  .t-mdf-program .benfefit .group,
+  .t-mdf-program .packages .group,
+  .t-mdf-program .page-about .group,
+  .t-mdf-program .mirror .mdf-container ul {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: auto;
+    align-items: stretch;
+  }
+  .t-mdf-program .benfefit .group .item,
+  .t-mdf-program .packages .group .item,
+  .t-mdf-program .page-about .group .item,
+  .t-mdf-program .mirror .mdf-container ul li {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Comparison table — horizontal scroll trong khung */
+  .t-mdf-program .border-table { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .t-mdf-program .border-table table { min-width: 720px; }
+
+  /* Form */
+  .t-mdf-program .form-box {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    top: 0;
+    transform: none;
+    margin-top: 0;
+    position: relative;
+  }
+  .t-mdf-program .form-box .form,
+  .t-mdf-program .form-box .box { width: 100%; padding: 16px; box-sizing: border-box; }
+  .t-mdf-program .form-box .box .item { padding: 20px; }
+  .t-mdf-program .form-box .box .item .flex { flex-direction: column; }
+  .t-mdf-program .form-box .cta-w,
+  .t-mdf-program .form-box .cta-p {
+    width: 100%;
+    float: none;
+    margin: 8px 0 0;
+  }
+  .t-mdf-program .tabNumber { flex-wrap: wrap; gap: 8px; }
+  .t-mdf-program .tabNumber a { font-size: 13px; }
+  .t-mdf-program .tabNumber a:not(:last-child) {
+    background: none;
+    padding: 8px;
+  }
+
+  /* Login (signin area) */
+  .t-mdf-program .login-page {
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    flex-direction: column;
+    height: auto;
+    gap: 12px;
+    padding: 16px;
+  }
+  .t-mdf-program .login-page .txt,
+  .t-mdf-program .login-page .btn { width: 100%; padding: 14px; font-size: 18px; }
+
+  .t-mdf-program .only-mobi { display: block; }
+}
+
+/* ============= Export tweak =============
+   The "Most popular" pill is a fixed 127×38 box. With the real Poppins webfont (self-hosted here) the label is a few
+   px wider than the box and wrapped onto a 2nd line, so keep it on one line. */
+.t-mdf-program .packages .group .item.gold .hot {
+  white-space: nowrap;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+/* Intro title: the .shadow copy must sit on the title lines, not on top of the "Welcome to the" <em> line above them.
+   top:0 (shared rule above) overlapped the two; anchoring to the bottom lines it up with the title however it wraps. */
+.t-mdf-program .mirror .mdf-container .one h2 .shadow {
+  top: auto;
+  bottom: 0;
+  width: 100%;
+}

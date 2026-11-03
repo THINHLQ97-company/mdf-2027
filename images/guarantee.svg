@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 240" width="220" height="240"><defs><linearGradient id="cy" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#8B5CF6"/></linearGradient><filter id="b"><feGaussianBlur stdDeviation="10"/></filter></defs>
+<path d="M110 14l84 30v62c0 56-38 100-84 120-46-20-84-64-84-120V44z" fill="url(#cy)" filter="url(#b)" opacity=".6"/>
+<path d="M110 14l84 30v62c0 56-38 100-84 120-46-20-84-64-84-120V44z" fill="#0a1035" stroke="url(#cy)" stroke-width="5"/>
+<path d="M72 120l26 26 52-56" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/></svg>
