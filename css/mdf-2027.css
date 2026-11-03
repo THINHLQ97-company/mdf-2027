@@ -497,3 +497,29 @@ body.ob-open { overflow: hidden; }
   body.ob-open .ob-doc h3 { break-after: avoid; }
   body.ob-open .ob-doc li { break-inside: avoid; }
 }
+
+/* ---------- 2027 forest background: legibility + framing ---------- */
+/* Soft shade behind the hero title (left) and countdown (right) so text stays readable on the brighter scene */
+.t-mdf-program .page-opening::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(4, 7, 28, .62) 0%, rgba(4, 7, 28, .28) 34%, rgba(4, 7, 28, 0) 52%),
+    linear-gradient(270deg, rgba(4, 7, 28, .45) 0%, rgba(4, 7, 28, 0) 30%),
+    linear-gradient(0deg, rgba(4, 7, 28, .55) 0%, rgba(4, 7, 28, 0) 35%);
+}
+.t-mdf-program .intro-content .left h1 { filter: drop-shadow(0 2px 14px rgba(2, 4, 20, .55)); }
+.t-mdf-program .title-countdown { filter: drop-shadow(0 2px 10px rgba(2, 4, 20, .5)); }
+
+/* About heading: allow wrapping instead of clipping */
+.t-mdf-program .page-about h2 { white-space: normal; text-wrap: balance; font-size: 52px; line-height: 64px; }
+.t-mdf-program .page-about h2 .shadow { white-space: normal; }
+
+/* Phones: keep the portal and Gàn in frame */
+@media (max-width: 900px) {
+  .t-mdf-program { background-position: 60% center; }
+  .t-mdf-program .page-opening::before { background: linear-gradient(0deg, rgba(4, 7, 28, .55) 0%, rgba(4, 7, 28, .2) 50%, rgba(4, 7, 28, .35) 100%); }
+  .t-mdf-program .page-about h2 { font-size: 30px; line-height: 38px; }
+}
