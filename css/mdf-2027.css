@@ -444,3 +444,56 @@
 @media (max-width: 900px) {
   .t-mdf-program .mirror .mdf-container .one .desc { font-size: 18px; line-height: 26px; margin-top: 6px; }
 }
+
+/* =========== Registrar Obligation viewer =========== */
+.t-mdf-program .packages .group .item > .ob-link {
+  display: block; margin: -20px 0 28px; padding: 0; background: none; border: 0; cursor: pointer;
+  font: 500 14px/20px Poppins, Inter, sans-serif; color: #fff; text-decoration: underline; text-underline-offset: 3px; opacity: .9;
+}
+.t-mdf-program .packages .group .item > .ob-link:hover { opacity: 1; }
+.t-mdf-program .bk-ob { margin: 0 auto 12px; display: block; }
+.t-mdf-program .ob-modal { position: fixed; inset: 0; z-index: 400; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.t-mdf-program .ob-modal[hidden] { display: none; }
+.t-mdf-program .ob-backdrop { position: absolute; inset: 0; background: rgba(2, 4, 16, .72); backdrop-filter: blur(4px); }
+.t-mdf-program .ob-dialog {
+  position: relative; width: 760px; max-width: 100%; max-height: calc(100vh - 48px); display: flex; flex-direction: column;
+  border-radius: 14px; overflow: hidden; background: #f7f9ff; color: #0d1433; box-shadow: 0 30px 80px rgba(0,0,0,.6); outline: none;
+}
+.t-mdf-program .ob-bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; background: #0b1440; }
+.t-mdf-program .ob-btn {
+  padding: 8px 14px; border-radius: 7px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; cursor: pointer;
+  font: 600 13px/18px Poppins, Inter, sans-serif;
+}
+.t-mdf-program .ob-btn:hover { border-color: #fff; }
+.t-mdf-program .ob-x { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.t-mdf-program .ob-x:hover { background: rgba(255,255,255,.22); }
+.t-mdf-program .ob-btn:focus-visible, .t-mdf-program .ob-x:focus-visible { outline: 2px solid #7FE7FF; outline-offset: 2px; }
+.t-mdf-program .ob-doc { overflow-y: auto; padding: 32px 40px 36px; font: 400 14px/22px Poppins, Inter, sans-serif; }
+.t-mdf-program .ob-doc h2 { margin: 0; font: 700 26px/34px Poppins, Inter, sans-serif; color: #0b1440; }
+.t-mdf-program .ob-sub { margin: 2px 0 18px; font-weight: 600; color: #3b4bd8; }
+.t-mdf-program .ob-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin: 0 0 8px; padding: 14px 16px; border-radius: 10px; background: #e8edff; }
+.t-mdf-program .ob-meta div { display: flex; gap: 8px; min-width: 0; }
+.t-mdf-program .ob-meta dt { flex: 0 0 74px; color: #5a6390; font-size: 12px; }
+.t-mdf-program .ob-meta dd { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.t-mdf-program .ob-doc h3 { margin: 22px 0 6px; font: 700 15px/22px Poppins, Inter, sans-serif; color: #0b1440; padding-bottom: 4px; border-bottom: 1px solid #d5dcf5; }
+.t-mdf-program .ob-doc ul { margin: 0; padding-left: 20px; list-style: disc; }
+.t-mdf-program .ob-doc li { margin: 4px 0; color: #1f274d; }
+.t-mdf-program .ob-foot { margin: 24px 0 0; font-size: 12px; line-height: 18px; color: #5a6390; }
+body.ob-open { overflow: hidden; }
+@media (max-width: 600px) {
+  .t-mdf-program .ob-doc { padding: 22px 18px 26px; }
+  .t-mdf-program .ob-meta { grid-template-columns: 1fr; }
+  .t-mdf-program .ob-btn { padding: 8px 10px; }
+}
+/* Print / Save as PDF: only the obligation document */
+@media print {
+  body.ob-open * { visibility: hidden !important; }
+  body.ob-open .ob-doc, body.ob-open .ob-doc * { visibility: visible !important; }
+  body.ob-open .t-mdf-program { position: static; height: auto; overflow: visible; background: #fff !important; }
+  body.ob-open .ob-modal { position: absolute; top: 0; left: 0; right: 0; padding: 0; display: block; }
+  body.ob-open .ob-backdrop, body.ob-open .ob-bar { display: none !important; }
+  body.ob-open .ob-dialog { display: block; overflow: visible; box-shadow: none; max-height: none; width: 100%; border-radius: 0; background: #fff; }
+  body.ob-open .ob-doc { overflow: visible; padding: 0; }
+  body.ob-open .ob-doc h3 { break-after: avoid; }
+  body.ob-open .ob-doc li { break-inside: avoid; }
+}

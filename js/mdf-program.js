@@ -173,6 +173,7 @@
         (isEarlyBird() ? '<s>' + money(p.list) + '</s>' : '') + '<b>' + money(priceOf(p)) + '<i> ' + esc(t.perYear) + '</i></b>' +
         '<u>' + esc(t.halfYearPrefix) + ' ' + money(p.half) + esc(t.halfYearSuffix) + '</u>' +
         '<button type="button" class="cta" data-book="' + p.key + '">' + esc(t.cta) + '</button>' +
+          '<button type="button" class="ob-link" data-ob="' + p.key + '">View Registrar Obligation</button>' +
         '<ul>' + p.features.map(function (f) { return '<li' + (p.isNew && p.isNew.indexOf(f) >= 0 ? ' class="new"' : '') + '>' + esc(t.features[f]) + '</li>'; }).join('') + '</ul>' +
         '<div class="note">' + esc(p.key === 'diamond' ? t.exclusive : t.limited) + ' <b>' + p.slots + '</b> ' + esc(p.slots === 1 ? t.slotAvailable : t.slotsAvailable) + '</div></div>';
     }).join('') + '</div>';
@@ -318,6 +319,7 @@
       '<p>Reference <b>' + esc(d.ref) + '</b> · ' + esc(d.plan.toUpperCase()) + '</p>' +
       '<p>Held until <b>' + esc(d.holdUntil) + '</b> (GMT+7)</p>' +
       '<ol class="bk-next"><li><b>Now</b> Confirmation email to ' + esc(d.email) + '</li><li><b>Within 1 business day</b> Contract and invoice from our team</li><li><b>Before the hold ends</b> Sign the contract to secure your slot</li><li><b>After payment</b> Kick-off and your benefits go live</li></ol>' +
+      '<button type="button" class="bk-btn primary bk-ob" data-ob="' + esc(d.plan) + '" data-ob-tlds="' + esc(d.tlds.join(', ')) + '" data-ob-ref="' + esc(d.ref) + '" data-ob-reg="' + esc(d.registry) + '">View your Registrar Obligation</button>' +
       (d.preview ? '<p class="bk-preview">Preview mode: this registration was not sent anywhere yet.</p>' : '') +
       '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book another package</button></div>';
   }
@@ -389,7 +391,7 @@
       };
       submitRegistration(payload).then(function (res) {
         bk.done = {
-          ref: res.ref, plan: bk.plan, email: payload.email, preview: !!res.preview,
+          ref: res.ref, plan: bk.plan, email: payload.email, preview: !!res.preview, tlds: payload.tlds, registry: payload.registry,
           holdUntil: new Date(res.holdUntil).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
         };
         clearDraft();
@@ -474,6 +476,68 @@
     if (tr && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); if (tipOpenFor === tr) hideTip(); else showTip(tr); }
   });
   document.addEventListener('scroll', hideTip, true);
+
+  /* ───────────── Registrar Obligation viewer ───────────── */
+  var obLastFocus = null, obText = '';
+  function openObligation(plan, tlds, ref, registry) {
+    var O = window.MDF_OBLIGATION, sections = O && O.plans[plan];
+    var modal = document.getElementById('ob-modal'), doc = document.getElementById('ob-doc');
+    if (!sections || !modal) return;
+    var tldLabel = tlds || '[Your TLD]';
+    var meta = [['Program', O.program], ['Registrar', O.registrar], ['Registry', registry || '[Registry name]'], ['TLD(s)', tldLabel],
+      ['Plan', plan.toUpperCase()], ['Term', O.term]];
+    if (ref) meta.push(['Reference', ref]);
+    var html = '<h2 id="ob-title">' + esc(O.title) + '</h2><p class="ob-sub">For ' + esc(tldLabel) + ' · ' + esc(plan.toUpperCase()) + ' plan</p>' +
+      '<dl class="ob-meta">' + meta.map(function (m) { return '<div><dt>' + esc(m[0]) + '</dt><dd>' + esc(m[1]) + '</dd></div>'; }).join('') + '</dl>';
+    var text = O.title + '\n' + 'For ' + tldLabel + ' – ' + plan.toUpperCase() + ' plan\n\n' + meta.map(function (m) { return m[0] + ': ' + m[1]; }).join('\n') + '\n';
+    sections.forEach(function (s) {
+      html += '<h3>' + esc(s.h) + '</h3><ul>' + s.items.map(function (i) { return '<li>' + esc(i.replace(/\{tld\}/g, tldLabel)) + '</li>'; }).join('') + '</ul>';
+      text += '\n' + s.h + '\n' + s.items.map(function (i) { return '  • ' + i.replace(/\{tld\}/g, tldLabel); }).join('\n') + '\n';
+    });
+    html += '<p class="ob-foot">This document lists Mat Bao’s obligations under the MDF Program 2027 and is intended to be attached to the agreement between the Registry and Mat Bao. Placements are shown on matbao.net unless stated otherwise.</p>';
+    doc.innerHTML = html;
+    obText = text;
+    obLastFocus = document.activeElement;
+    hideTip();
+    modal.hidden = false;
+    document.body.classList.add('ob-open');
+    modal.querySelector('.ob-dialog').focus();
+  }
+  function closeObligation() {
+    var modal = document.getElementById('ob-modal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    document.body.classList.remove('ob-open');
+    if (obLastFocus && obLastFocus.focus) obLastFocus.focus();
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest && ev.target.closest('[data-ob]');
+    if (t) { openObligation(t.getAttribute('data-ob'), t.getAttribute('data-ob-tlds'), t.getAttribute('data-ob-ref'), t.getAttribute('data-ob-reg')); return; }
+    if (ev.target.closest && ev.target.closest('[data-ob-close]')) { closeObligation(); return; }
+    var cp = ev.target.closest && ev.target.closest('[data-ob-copy]');
+    if (cp) {
+      var done = function () { cp.textContent = 'Copied'; window.setTimeout(function () { cp.textContent = 'Copy text'; }, 1600); };
+      var fallback = function () {
+        var r = document.createRange(); r.selectNodeContents(document.getElementById('ob-doc'));
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        cp.textContent = 'Text selected: press Ctrl+C';
+      };
+      try { navigator.clipboard.writeText(obText).then(done, fallback); } catch (e) { fallback(); }
+      return;
+    }
+    if (ev.target.closest && ev.target.closest('[data-ob-print]')) { window.print(); }
+  });
+  document.addEventListener('keydown', function (ev) {
+    var modal = document.getElementById('ob-modal');
+    if (!modal || modal.hidden) return;
+    if (ev.key === 'Escape') { closeObligation(); return; }
+    if (ev.key === 'Tab') {
+      var f = modal.querySelectorAll('button'); if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+      else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+    }
+  });
 
   /* ───────────── Start ───────────── */
   if (isAuthed()) mountDeck(); else mountGate();

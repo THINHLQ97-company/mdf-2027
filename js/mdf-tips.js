@@ -44,12 +44,13 @@
       return frame(searchBox(26) + rows);
     },
     searchbar: function () {
+      function chip(x, w, label, tl) { return hi(x, 50, w, 13) + t(x + w / 2 - (tl ? 4 : 0), 59, label, 7, C.txt, 'middle', 600) + (tl ? tier(x + w - 6, 56.5, tl) : ''); }
       return frame(searchBox(28) +
-        '<rect x="14" y="46" width="160" height="62" rx="4" fill="#fff" fill-opacity=".08" stroke="' + C.line + '"/>' +
-        hi(18, 50, 152, 13) + t(24, 59, 'mybrand.yourtld', 7.5, C.txt, null, 600) + tier(162, 56.5, 'D') +
-        hi(18, 66, 152, 13) + t(24, 75, 'mybrand.yourtld', 7.5, C.txt) + tier(162, 72.5, 'G') +
-        bar(18, 84, 152, 9) + bar(18, 96, 120, 9) +
-        t(14, 126, 'Suggestions drop down while the customer types', 7, C.mute));
+        chip(14, 64, '.yourtld', 'D') + bar(82, 50, 40, 13) + bar(126, 50, 40, 13) + bar(170, 50, 40, 13) +
+        t(14, 82, 'TLDs shown under the search bar, in slides', 7, C.mute) +
+        '<circle cx="104" cy="96" r="3" fill="' + C.hi + '"/><circle cx="114" cy="96" r="3" fill="#FFE770"/><circle cx="124" cy="96" r="3" fill="#d6d6d6"/>' +
+        t(104, 110, '1', 6.5, C.mute, 'middle') + t(114, 110, '2', 6.5, C.mute, 'middle') + t(124, 110, '3', 6.5, C.mute, 'middle') +
+        t(14, 132, 'Slide 1: Diamond · Slide 2: Gold · Slide 3: Silver', 7, C.mute));
     },
     ai: function () {
       return frame(searchBox(28) +
@@ -123,28 +124,28 @@
 
   window.MDF_TIPS = {
     resultsPopularity: {
-      title: 'Search Results (Popularity view)',
-      body: 'After a customer searches a name, matbao.net lists other extensions below the main result. This is where your TLD ranks in that list in the default popularity view.',
+      title: 'Search Results (Popular category)',
+      body: 'After a customer searches a name, matbao.net lists other extensions below the main result. This is where your TLD ranks in the Popular category.',
       wf: 'results'
     },
     resultsNational: {
-      title: 'Search Results (National view)',
-      body: 'Your TLD’s rank when the customer switches the extension list to the national view. Diamond ranks first, Gold on page 1, Silver on pages 2–3.',
+      title: 'Search Results (International gTLDs)',
+      body: 'Your TLD’s rank in the International (gTLDs) category of the search results. Diamond and Gold appear on page 1, Silver on pages 2–3.',
       wf: 'results'
     },
     homepageBanner: {
       title: 'Homepage Banner',
-      body: 'Your TLD banner in the rotating slider at the top of the matbao.net homepage. The slot is your place in the rotation: lower slots are shown sooner and more often. Diamond takes slots 1–5, Gold 3–7, Silver 5–9.',
+      body: 'Your TLD banner in the rotating slider at the top of the matbao.net homepage. The slot is your place in the rotation: lower slots are shown sooner and more often. Diamond takes slots 1–5, Gold 3–7, Silver 5–9. Your banner stays in the slider for the whole contract term.',
       wf: 'banner'
     },
     promoPage: {
       title: 'Promo-page Presence',
-      body: 'Your TLD featured on the domain promotions page. Diamond takes the leading spots, Gold the next priority spots.',
+      body: 'A standard banner for your TLD on the matbao.net promotions page: positions 1st–4th for Diamond, 5th–8th for Gold, 8th–12th for Silver. Diamond also gets a slot highlighting its discounted price.',
       wf: 'promo'
     },
     searchBar: {
-      title: 'Search Bar Suggestion',
-      body: 'As the customer types a name, a drop-down suggests complete domains before they press search. Your TLD appears in that list (Diamond first, then Gold).',
+      title: 'TLD under the Search Bar',
+      body: 'Your TLD is shown at all times in the row of extensions under the main search bar on matbao.net. The row rotates in slides: Diamond on Slide 1, Gold on Slide 2, Silver on Slide 3.',
       wf: 'searchbar'
     },
     aiSearch: {
