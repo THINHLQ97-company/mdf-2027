@@ -12,7 +12,7 @@
   function isEarlyBird() { return Date.now() < EARLY_BIRD_DEADLINE.getTime(); }
   var SLIDES = ['hero', 'sec-intro', 'sec-benefits', 'sec-guarantee', 'sec-packages', 'sec-comparison', 'sec-about', 'sec-book'];
   // Pages with their own scroll: wheel scrolls the page first, only switches slide at the top/bottom edge.
-  var INTERNAL_SCROLL = ['sec-benefits', 'sec-guarantee', 'sec-packages', 'sec-comparison', 'sec-book'];
+  var INTERNAL_SCROLL = ['sec-benefits', 'sec-guarantee', 'sec-packages', 'sec-comparison', 'sec-about', 'sec-book'];
 
   var root = document.getElementById('mdf-root');
 
