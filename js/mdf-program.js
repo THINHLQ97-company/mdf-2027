@@ -49,6 +49,7 @@
   function setActive(key) {
     if (SLIDES.indexOf(key) < 0) return;
     active = key;
+    root.setAttribute('data-slide', key);
     pages.forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-slide') === key); });
     navItems.forEach(function (li) { li.classList.toggle('active', li.getAttribute('data-target') === key); });
     scrollHint.style.display = key === 'hero' ? '' : 'none';
@@ -332,6 +333,11 @@
     var box = document.getElementById('mdf-summary');
     if (!box) return;
     var q = quote();
+    var bar = document.getElementById('mdf-sumbar');
+    if (bar) {
+      bar.hidden = !q || !!bk.done;
+      if (q) bar.innerHTML = '<span class="pl ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</span><b>' + money(q.amount) + '<small>' + q.unit + '</small></b><span class="sl">' + q.plan.slots + ' of ' + q.plan.total + ' slots left</span>';
+    }
     var h = '<strong>Your reservation</strong>';
     if (!q) {
       h += '<p class="bk-sum-empty">Choose a package to see your price and available slots.</p>';
@@ -443,6 +449,15 @@
     if (next) next.click();
   });
   loadDraft();
+
+  /* ───────────── Comparison: plan switcher (phones) ───────────── */
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-cmp]');
+    if (!b) return;
+    var n = b.getAttribute('data-cmp'), tbl = root.querySelector('.border-table table');
+    if (tbl) tbl.className = 'cmp-show-' + n;
+    root.querySelectorAll('[data-cmp]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  });
 
   /* ───────────── Benefit explanations (hover / tap) ───────────── */
   var tipOpenFor = null;

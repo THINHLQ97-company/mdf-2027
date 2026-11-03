@@ -577,3 +577,94 @@ body.ob-open { overflow: hidden; }
   .t-mdf-program .page-about h2 + .desc { font-size: 18px; line-height: 28px; margin-bottom: 28px; }
   .t-mdf-program .page-form .mdf-container { padding-top: 104px; }
 }
+
+/* =================== Phone optimisation =================== */
+.t-mdf-program .m-topbar,
+.t-mdf-program .cmp-switch,
+.t-mdf-program .m-sumbar { display: none; }
+
+@media (max-width: 900px) {
+  /* 1. Solid top bar so Menu + social icons never sit on top of scrolled content */
+  .t-mdf-program .m-topbar {
+    display: block; position: fixed; top: 0; left: 0; right: 0; z-index: 99; pointer-events: none;
+    height: calc(60px + env(safe-area-inset-top, 0px));
+    background: linear-gradient(180deg, rgba(5, 9, 34, .94) 0%, rgba(5, 9, 34, .82) 100%);
+    backdrop-filter: blur(12px); border-bottom: 1px solid rgba(127, 231, 255, .14);
+    transition: opacity .3s;
+  }
+  .t-mdf-program[data-slide="hero"] .m-topbar { opacity: 0; }
+  .t-mdf-program .topmenu { top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .t-mdf-program .socialmenu { top: calc(14px + env(safe-area-inset-top, 0px)); }
+  .t-mdf-program .socialmenu .item { width: 30px; height: 30px; }
+  .t-mdf-program .topmenu ul li { padding: 12px 14px; font-size: 15px; }   /* bigger tap targets */
+
+  /* Content starts below the bar on every scrolling slide */
+  .t-mdf-program .benefit-2027 h2,
+  .t-mdf-program .packages h2,
+  .t-mdf-program .page-about h2 { margin-top: 84px !important; }
+  .t-mdf-program .page-form .mdf-container { padding-top: 76px; padding-bottom: 96px; }
+  .t-mdf-program .page-comparison .mdf-container { padding-top: 0; }
+  .t-mdf-program .mdf-page.active .border-table { margin-top: 12px; }
+
+  /* Benefits: NEW tag stays on the title line */
+  .t-mdf-program .benefit-2027 .group .item b { display: block; }
+  .t-mdf-program .benefit-2027 .tag-new { margin-left: 6px; vertical-align: 2px; }
+
+  /* 2. Comparison: one plan at a time, chosen with a sticky switcher */
+  .t-mdf-program .cmp-switch {
+    display: flex; gap: 4px; position: sticky; top: 68px; z-index: 5;
+    margin: 72px 0 0; padding: 4px; border-radius: 12px;
+    background: rgba(5, 9, 34, .9); border: 1px solid rgba(255, 255, 255, .14); backdrop-filter: blur(10px);
+  }
+  .t-mdf-program .cmp-switch button {
+    flex: 1; padding: 11px 6px; border: 0; border-radius: 9px; background: transparent; cursor: pointer;
+    font: 600 14px/18px Poppins, Inter, sans-serif; color: rgba(255, 255, 255, .75);
+  }
+  .t-mdf-program .cmp-switch button[data-cmp="1"].on { background: #e8e8e8; color: #06102e; }
+  .t-mdf-program .cmp-switch button[data-cmp="2"].on { background: #FFE770; color: #06102e; }
+  .t-mdf-program .cmp-switch button[data-cmp="3"].on { background: #ADD2F4; color: #06102e; }
+  .t-mdf-program .border-table { overflow-x: visible; padding: 12px; }
+  .t-mdf-program .border-table table { min-width: 0; padding: 0 4px; table-layout: fixed; }
+  .t-mdf-program .border-table table thead tr:first-child th { font-size: 18px; padding: 12px 8px; }
+  .t-mdf-program .border-table table thead tr:nth-child(2) { display: none; }
+  .t-mdf-program .border-table table td { padding: 14px 6px; font-size: 14px; line-height: 19px; }
+  .t-mdf-program .border-table table td.row-title { width: 56%; padding-left: 0; font-size: 13.5px; }
+  .t-mdf-program .border-table table td[colspan="4"] { padding: 26px 0 8px 28px; font-size: 15px; }
+  .t-mdf-program .border-table table.cmp-show-1 tr > td:not([colspan]):nth-child(3),
+  .t-mdf-program .border-table table.cmp-show-1 tr > td:not([colspan]):nth-child(4),
+  .t-mdf-program .border-table table.cmp-show-2 tr > td:not([colspan]):nth-child(2),
+  .t-mdf-program .border-table table.cmp-show-2 tr > td:not([colspan]):nth-child(4),
+  .t-mdf-program .border-table table.cmp-show-3 tr > td:not([colspan]):nth-child(2),
+  .t-mdf-program .border-table table.cmp-show-3 tr > td:not([colspan]):nth-child(3) { display: none; }
+  .t-mdf-program .tip-hint { font-size: 12px; }
+
+  /* 3. Booking steps: one line, only the current step is labelled */
+  .t-mdf-program .bk-steps { flex-wrap: nowrap; gap: 6px; }
+  .t-mdf-program .bk-steps li:not(.active) > span,
+  .t-mdf-program .bk-steps li:not(.active) > button { font-size: 0; padding: 4px; gap: 0; }
+  .t-mdf-program .bk-steps li:not(.active) i { font-size: 12px; }
+  .t-mdf-program .bk-field input, .t-mdf-program .bk-field textarea { font-size: 16px; }  /* no iOS zoom on focus */
+
+  /* 4. Booking: big summary card hidden; a sticky price bar follows the form instead */
+  .t-mdf-program .bk-summary { display: none; }
+  .t-mdf-program .m-sumbar:not([hidden]) {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; margin-top: 14px;
+    padding: 12px 16px; border-radius: 12px; background: rgba(5, 9, 34, .94);
+    border: 1px solid rgba(127, 231, 255, .4); box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    font-family: Poppins, Inter, sans-serif; color: #fff;
+  }
+  .t-mdf-program .m-sumbar .pl { font-weight: 700; font-size: 13px; letter-spacing: .6px; }
+  .t-mdf-program .m-sumbar .pl.silver { color: #e8e8e8; } .t-mdf-program .m-sumbar .pl.gold { color: #FFE770; } .t-mdf-program .m-sumbar .pl.diamond { color: #ADD2F4; }
+  .t-mdf-program .m-sumbar b { font-size: 18px; font-variant-numeric: tabular-nums; }
+  .t-mdf-program .m-sumbar b small { font-size: 12px; font-weight: 400; color: rgba(255,255,255,.7); margin-left: 2px; }
+  .t-mdf-program .m-sumbar .sl { margin-left: auto; font-size: 12px; color: rgba(255,255,255,.75); }
+  .t-mdf-program .form-box .form { position: relative; }
+}
+@media (max-width: 900px) {
+  .t-mdf-program .border-table table { table-layout: auto; width: 100%; }
+  .t-mdf-program .border-table table td:not(.row-title):not([colspan]) { width: 44%; }
+}
+@media (max-width: 900px) {
+  .t-mdf-program .page-form { overflow: visible; }
+}
