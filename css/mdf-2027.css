@@ -525,3 +525,38 @@ body.ob-open { overflow: hidden; }
 }
 
 .t-mdf-program .ob-doc { flex: 1 1 auto; min-height: 0; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+
+/* ---------- Fit at 100% zoom on wide / short screens ---------- */
+/* Anchor the scene lower so the lake, Gàn and the goat stay in frame when the screen is wider than 16:9 */
+.t-mdf-program { background-position: center 82%; }
+.t-mdf-program .page-opening::before {
+  background:
+    linear-gradient(90deg, rgba(4, 7, 28, .62) 0%, rgba(4, 7, 28, .28) 34%, rgba(4, 7, 28, 0) 52%),
+    linear-gradient(270deg, rgba(4, 7, 28, .45) 0%, rgba(4, 7, 28, 0) 30%),
+    linear-gradient(0deg, rgba(4, 7, 28, .35) 0%, rgba(4, 7, 28, 0) 18%);
+}
+.t-mdf-program .page-opening::after { opacity: .45; }
+
+/* Benefits: frosted backdrop covers the whole screen while scrolling (same as Packages / Guarantee) */
+.t-mdf-program .page-benefits::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  backdrop-filter: blur(10px) saturate(1.05); background: rgba(3, 6, 24, .35);
+}
+.t-mdf-program .benefit-2027 { backdrop-filter: none !important; background: transparent; position: relative; height: auto; }
+.t-mdf-program .benefit-2027::after { display: none; }
+
+/* Short laptop screens (e.g. 1366×657, 1536×730 at 100%): compact Benefits so it fits without scrolling */
+@media (min-width: 901px) and (max-height: 860px) {
+  .t-mdf-program .benefit-2027 h2 { margin-top: 108px; margin-bottom: 20px; font-size: 42px; line-height: 50px; width: 100%; }
+  .t-mdf-program .benefit-2027 .group .item { padding: 14px; }
+  .t-mdf-program .benefit-2027 .group .item img { aspect-ratio: 504 / 230; margin-bottom: 12px; }
+  .t-mdf-program .benefit-2027 .group .item b { font-size: 17px; line-height: 24px; margin-bottom: 4px; }
+  .t-mdf-program .benefit-2027 .group .item span { font-size: 13.5px; line-height: 20px; min-height: 0; margin-bottom: 8px; }
+  .t-mdf-program .benefit-2027 { padding-bottom: 24px; }
+}
+.t-mdf-program { background-position: center 74%; }
+/* Keep 4 benefit cards in one row down to 1200px wide */
+@media (max-width: 1400px) and (min-width: 1201px) {
+  .t-mdf-program .benefit-2027 .group { flex-wrap: nowrap; gap: 16px; }
+  .t-mdf-program .benefit-2027 .group .item { width: 25%; }
+}
