@@ -37,12 +37,12 @@ a{color:${C.cyan}}</style></head>
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 <tr><td style="padding:0 4px 14px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-    <td><img src="${ASSET}/images/email-logo.png" width="118" height="35" alt="MATBAO CORP" style="display:block;border:0;"></td>
+    <td><img src="${ASSET}/images/email-logo.png" width="118" height="35" alt="MATBAO" style="display:block;border:0;font:700 20px/35px ${FONT};letter-spacing:1px;color:#ffffff;"></td>
     <td align="right" style="font:600 11px/16px ${FONT};letter-spacing:2px;color:${C.cyan};">MDF PROGRAM 2027</td>
   </tr></table>
 </td></tr>
 <tr><td style="border-radius:16px 16px 0 0;overflow:hidden;background:${C.card};" bgcolor="${C.card}">
-  <img src="${ASSET}/images/email-header.jpg" width="600" alt="Mat Bao MDF Program 2027" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:16px 16px 0 0;">
+  <img src="${ASSET}/images/email-header.jpg" width="600" alt="Mat Bao MDF Program 2027" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:16px 16px 0 0;background:${C.panel};background-image:linear-gradient(135deg,#0b1a5c,#3b1e9a);font:700 18px/24px ${FONT};color:${C.cyan};text-align:center;">
 </td></tr>
 <tr><td class="px" bgcolor="${C.card}" style="background:${C.card};padding:30px 36px 12px;border-left:1px solid ${C.line};border-right:1px solid ${C.line};font:400 15px/24px ${FONT};color:${C.body};">
 ${bodyHtml}
