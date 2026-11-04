@@ -8,7 +8,7 @@ const path = require('path');
 
 function createMailer(env, outboxDir) {
   const provider = (env.MAIL_PROVIDER || 'outbox').toLowerCase();
-  const from = { email: env.MAIL_FROM || 'mdf@matbao.net', name: env.MAIL_FROM_NAME || 'Mat Bao MDF Program' };
+  const from = { email: env.MAIL_FROM || 'no-reply@news.matbao.com', name: env.MAIL_FROM_NAME || 'Mat Bao MDF Program' };
   let smtp = null;
 
   if (provider === 'smtp') {
@@ -31,7 +31,7 @@ function createMailer(env, outboxDir) {
         to: msg.to,
         subject: msg.subject,
         html: msg.html,
-        text: msg.text,
+        text: msg.text ? msg.text + '\n\nThis is an automated email. Please do not reply. Questions: marcom@matbao.com' : undefined,
         idempotency_key: msg.idempotencyKey || require('crypto').randomUUID()
       }
     };

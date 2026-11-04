@@ -49,8 +49,8 @@ ${bodyHtml}
 </td></tr>
 <tr><td class="px" bgcolor="${C.card}" style="background:${C.card};padding:6px 36px 28px;border:1px solid ${C.line};border-top:0;border-radius:0 0 16px 16px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid ${C.line};padding-top:18px;font:400 12px/19px ${FONT};color:${C.mute};">
-  <b style="color:${C.ink};">Need help?</b> Contact Ricky at
-  <a href="mailto:marcom@matbao.com" style="color:${C.cyan};text-decoration:none;">marcom@matbao.com</a> · WhatsApp +84 78893 1808
+  <b style="color:${C.ink};">This is an automated email. Please do not reply.</b><br>
+  For any questions, email <a href="mailto:marcom@matbao.com" style="color:${C.cyan};text-decoration:none;font-weight:600;">marcom@matbao.com</a> (Ricky) · WhatsApp +84 78893 1808
   </td></tr></table>
 </td></tr>
 <tr><td align="center" style="padding:18px 10px 0;font:400 11px/17px ${FONT};color:${C.mute};">
