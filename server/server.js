@@ -31,7 +31,7 @@ const SESSION_SECRET = env.SESSION_SECRET || crypto.createHash('sha256').update(
 const store = createStore(path.join(DATA_DIR, 'db.json'));
 const db = store.db;
 const mailer = createMailer(env, path.join(DATA_DIR, 'outbox'));
-const emails = createEmails(ROOT, BASE_URL);
+const emails = createEmails(ROOT, BASE_URL, env.EMAIL_ASSET_URL);
 
 const PLAN_KEYS = ['silver', 'gold', 'diamond'];
 const FREE_MAIL = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126|mail|gmx|yandex|zoho)\./i;
@@ -252,7 +252,7 @@ function obligationPage(req, res, tok) {
 <style>body{margin:0;background:#eef1fb;font-family:Arial,Helvetica,sans-serif;color:#1b2347}main{max-width:760px;margin:24px auto;padding:36px 40px;background:#fff;border-radius:12px}
 .bar{max-width:760px;margin:24px auto 0;display:flex;justify-content:flex-end}button{padding:10px 18px;border:0;border-radius:8px;background:#0b1440;color:#fff;font-weight:700;cursor:pointer}
 @media print{body{background:#fff}.bar{display:none}main{margin:0;padding:0}}@media(max-width:600px){main{padding:22px 18px;margin:12px}}</style></head>
-<body><div class="bar"><button onclick="window.print()">Save as PDF / Print</button></div><main>${emails.obligationHtml(r)}
+<body><div class="bar"><button onclick="window.print()">Save as PDF / Print</button></div><main>${emails.obligationHtml(r, true)}
 <p style="margin-top:24px;font-size:12px;color:#6b7395">This document lists Mat Bao's obligations under the MDF Program 2027 and is intended to be attached to the agreement between the Registry and Mat Bao. Confirmed on ${esc(fmt(r.confirmedAt))}.</p></main></body></html>`);
 }
 

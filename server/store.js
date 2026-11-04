@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS = {
   holdHours: 48,              // Mat Bao promises to confirm within this time
   verifyHours: 24,            // unverified requests expire after this
   maxActivePerDomain: 2,      // active holds + confirmed per email domain
-  teamEmails: ['marcom@matbao.com'],
+  teamEmails: ['thinhlq@matbao.com'],
   replyTo: 'marcom@matbao.com'
 };
 
