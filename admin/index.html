@@ -352,8 +352,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       '<p class="hint">Suất chỉ được giữ sau khi registry bấm link xác thực trong email. Quá hạn xác nhận, team nhận email nhắc; suất không tự nhả để registry không bị thiệt.</p></section>';
     h += '<section class="panel"><h2>Email</h2>' +
       '<label class="f">Email team nhận thông báo (mỗi dòng một địa chỉ)<textarea class="i" id="s-team" rows="3">' + esc(s.teamEmails.join('\n')) + '</textarea></label>' +
-      '<label class="f">Reply-to cho email gửi registry<input class="i" type="email" id="s-reply" value="' + esc(s.replyTo) + '"></label>' +
-      '<p class="hint">Kênh gửi hiện tại: <b>' + esc(D.mailProvider) + '</b>. Đổi trong biến môi trường MAIL_PROVIDER.</p>' +
+      '<input type="hidden" id="s-reply" value="' + esc(s.replyTo) + '">' +
+      '<p class="hint">Kênh gửi hiện tại: <b>' + esc(D.mailProvider) + '</b>. Email gửi từ địa chỉ trong MAIL_FROM; Sendify chỉ nhận email giao dịch, không cho nội dung quảng cáo.</p>' +
       '<div class="row2"><input class="i" type="email" id="s-test" placeholder="email nhận thử"><button class="btn" type="button" data-act="test-email">Gửi email thử</button></div></section>';
     h += '<div style="grid-column:1/-1"><button class="btn primary" type="submit">Lưu cài đặt</button></div></form>';
     return h;

@@ -42,19 +42,19 @@ a{color:${C.cyan}}</style></head>
   </tr></table>
 </td></tr>
 <tr><td style="border-radius:16px 16px 0 0;overflow:hidden;background:${C.card};" bgcolor="${C.card}">
-  <img src="${ASSET}/images/email-header.jpg" width="600" alt="Beyond Visibility, Guaranteed Growth" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:16px 16px 0 0;">
+  <img src="${ASSET}/images/email-header.jpg" width="600" alt="Mat Bao MDF Program 2027" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:16px 16px 0 0;">
 </td></tr>
 <tr><td class="px" bgcolor="${C.card}" style="background:${C.card};padding:30px 36px 12px;border-left:1px solid ${C.line};border-right:1px solid ${C.line};font:400 15px/24px ${FONT};color:${C.body};">
 ${bodyHtml}
 </td></tr>
 <tr><td class="px" bgcolor="${C.card}" style="background:${C.card};padding:6px 36px 28px;border:1px solid ${C.line};border-top:0;border-radius:0 0 16px 16px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="border-top:1px solid ${C.line};padding-top:18px;font:400 12px/19px ${FONT};color:${C.mute};">
-  <b style="color:${C.ink};">Need help?</b> Reply to this email, or contact Ricky at
+  <b style="color:${C.ink};">Need help?</b> Contact Ricky at
   <a href="mailto:marcom@matbao.com" style="color:${C.cyan};text-decoration:none;">marcom@matbao.com</a> · WhatsApp +84 78893 1808
   </td></tr></table>
 </td></tr>
 <tr><td align="center" style="padding:18px 10px 0;font:400 11px/17px ${FONT};color:${C.mute};">
-  Mat Bao Corporation · Number 1 Registrar in Vietnam · <a href="https://www.matbao.net" style="color:${C.mute};">matbao.net</a>
+  Mat Bao Corporation · <a href="https://www.matbao.net" style="color:${C.mute};">matbao.net</a>
 </td></tr></table></td></tr></table></body></html>`;
   }
   const button = (href, label) => `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 20px;"><tr>
@@ -81,7 +81,7 @@ ${bodyHtml}
     const vi = lang === 'vi';
     const rows = [
       [vi ? 'Mã đăng ký' : 'Reference', b(esc(r.ref))],
-      [vi ? 'Gói' : 'Package', `${planTag(r.plan)} &nbsp;·&nbsp; ${money(r.price)}${r.billing === 'half' ? (vi ? '/nửa năm' : '/half-year') : (vi ? '/năm' : '/year')}${r.earlyBird ? ` <span style="color:#86efac;">· early bird</span>` : ''}`],
+      [vi ? 'Gói' : 'Package', `${planTag(r.plan)} &nbsp;·&nbsp; ${money(r.price)}${r.billing === 'half' ? (vi ? '/nửa năm' : '/half-year') : (vi ? '/năm' : '/year')}`],
       ['Registry', esc(r.registry)],
       ['TLD(s)', b(esc(r.tlds.join(', ')))],
       [vi ? 'Liên hệ' : 'Contact', esc(r.contactName) + (r.jobTitle ? ', ' + esc(r.jobTitle) : '') + '<br>' + esc(r.email) + (r.phone ? ' · ' + esc(r.phone) : '')]
@@ -146,7 +146,7 @@ ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-b
         html: layout('Waitlist', eyebrow('Waitlist') + h1(`You're on the ${esc(r.plan.toUpperCase())} waitlist`) +
           p(`Hi ${b(esc(r.contactName))},`) +
           p(`All ${esc(r.plan.toUpperCase())} slots are currently reserved. We have added you to the waitlist in the order your registration arrived. If a slot is released, we will email you straight away.`) +
-          summary(r) + p('Another package may still be available. Reply to this email and we can help you compare.'), 'You are on the waitlist'),
+          summary(r) + p('Another package may still be available. Email marcom@matbao.com and we can help you compare.'), 'You are on the waitlist'),
         text: `All ${r.plan.toUpperCase()} slots are reserved. You are on the waitlist (ref ${r.ref}).`
       };
     },
@@ -171,9 +171,8 @@ ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-b
           p(`Hi ${b(esc(r.contactName))},`) +
           p('Welcome to the Mat Bao MDF Program 2027. Your package is confirmed and the slot is now yours. Our team will send the contract and invoice shortly.') +
           summary(r) +
-          p('Below is your <b style="color:#ffffff;">Registrar Obligation</b>, listing what Mat Bao commits to for your TLD. You can attach it to the agreement. A printable version is available here:') +
-          button(obligationLink(r), 'Open printable Registrar Obligation') +
-          obligationHtml(r), 'Your package is confirmed'),
+          p('Your <b style="color:#ffffff;">Registrar Obligation</b> lists the commitments for your package and can be attached to the agreement. Open it here and use “Save as PDF” to keep a copy:') +
+          button(obligationLink(r), 'Open your Registrar Obligation'), 'Your package is confirmed'),
         text: `Your ${r.plan.toUpperCase()} package (ref ${r.ref}) is confirmed. Registrar Obligation: ${obligationLink(r)}`
       };
     },
@@ -186,7 +185,7 @@ ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-b
           p(`Hi ${b(esc(r.contactName))},`) +
           p(`We are unable to confirm the <b style="color:#ffffff;">${esc(r.plan.toUpperCase())}</b> package for this registration, and the slot has been released.`) +
           (note ? p('<b style="color:#ffffff;">Note from our team:</b> ' + esc(note)) : '') +
-          summary(r) + p('Reply to this email if you would like to discuss another package.'), 'Update on your registration'),
+          summary(r) + p('To discuss another package, email marcom@matbao.com.'), 'Update on your registration'),
         text: `We could not confirm registration ${r.ref}.` + (note ? ' Note: ' + note : '')
       };
     },
