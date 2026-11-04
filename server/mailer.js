@@ -2,7 +2,7 @@
 /* Email delivery. MAIL_PROVIDER picks the transport:
    - outbox  (default) writes each email to data/outbox/ so it can be previewed without sending anything
    - smtp    sends through any SMTP relay, e.g. Sendify's SMTP credentials (needs `npm install nodemailer`)
-   - sendify sends through the Sendify Email API (POST https://api.sendify.io/v1/emails). */
+   - sendify sends through the Sendify Email API (POST https://api.sendify.vn/api/emails). */
 const fs = require('fs');
 const path = require('path');
 
@@ -23,7 +23,7 @@ function createMailer(env, outboxDir) {
   // Sendify Email API (matbao.net/sendify): POST /v1/emails, Bearer auth, 202 { id, status: "queued" }.
   function buildSendifyRequest(msg) {
     return {
-      url: env.SENDIFY_API_URL || 'https://api.sendify.io/v1/emails',
+      url: env.SENDIFY_API_URL || 'https://api.sendify.vn/api/emails',
       headers: {
         'Content-Type': 'application/json', Authorization: 'Bearer ' + env.SENDIFY_API_KEY,
         'Idempotency-Key': msg.idempotencyKey || require('crypto').randomUUID()

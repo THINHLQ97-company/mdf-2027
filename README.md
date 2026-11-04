@@ -21,7 +21,7 @@ Opening `index.html` directly as a file still works, but then the form stays in 
 | `ADMIN_PASSWORD` | Dashboard password (each person signs in with their own name for the activity log) |
 | `SESSION_SECRET` | Random string used to sign dashboard sessions |
 | `MAIL_PROVIDER` | `outbox` (save emails to `data/outbox/`, nothing is sent), `smtp` or `sendify` |
-| `SENDIFY_API_URL`, `SENDIFY_API_KEY` | Sendify Email API (`https://api.sendify.io/v1/emails`, Bearer key) |
+| `SENDIFY_API_URL`, `SENDIFY_API_KEY` | Sendify Email API (`https://api.sendify.vn/api/emails`, Bearer key) |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | SMTP relay (run `npm install nodemailer`) |
 | `EMAIL_ASSET_URL` | Public address that serves `images/` for email headers and logo (defaults to `PUBLIC_URL`) |
 | `MAIL_FROM`, `MAIL_FROM_NAME` | Sender address (must be a verified sender domain in Sendify) |
