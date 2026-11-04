@@ -22,8 +22,11 @@ button { cursor: pointer; }
 .hidden { display: none !important; }
 
 /* Login */
-.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--brand); }
-.login form { width: 100%; max-width: 380px; background: var(--panel); border-radius: 14px; padding: 28px; display: grid; gap: 14px; }
+.login { min-height: 100vh; display: grid; place-items: center; align-content: center; gap: 22px; padding: 24px 16px; background: #060a26 url(/images/background.jpg) center 74%/cover no-repeat; position: relative; }
+.login::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,7,28,.55), rgba(4,7,28,.8)); backdrop-filter: blur(6px); }
+.login > * { position: relative; }
+.login .brand-logo { width: min(360px, 86vw); height: auto; display: block; }
+.login form { width: 100%; max-width: 380px; background: var(--panel); border-radius: 14px; padding: 28px; display: grid; gap: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.45); border-top: 4px solid #22d3ee; }
 .login h1 { margin: 0; font: 700 22px/30px var(--f-display); }
 .login p { margin: 0; color: var(--mute); font-size: 14px; }
 label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--mute); }
@@ -39,9 +42,11 @@ textarea.i { resize: vertical; min-height: 70px; }
 
 /* Shell */
 .app { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
-.side { background: var(--brand); color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
-.side .logo { font: 700 15px/20px var(--f-display); letter-spacing: .5px; padding: 0 10px 18px; }
-.side .logo small { display: block; font: 500 11px/16px var(--f-body); letter-spacing: 1.5px; color: #7fe7ff; }
+.side { background: linear-gradient(180deg, rgba(6,10,38,.86), rgba(6,10,38,.97)), url(/images/background.jpg) 60% 74%/cover; color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.side .logo { padding: 4px 8px 22px; margin-bottom: 8px; border-bottom: 1px solid rgba(127,231,255,.18); }
+.side .logo img { display: block; width: 100%; height: auto; }
+.side .logo small { display: block; margin-top: 10px; font: 600 11px/16px var(--f-body); letter-spacing: 1.5px; color: #7fe7ff; text-transform: uppercase; }
+.side .m-logo { display: none; }
 .side button.tab { text-align: left; background: none; border: 0; color: rgba(255,255,255,.75); padding: 10px 12px; border-radius: 8px; font-weight: 600; display: flex; justify-content: space-between; }
 .side button.tab:hover { background: rgba(255,255,255,.08); color: #fff; }
 .side button.tab.on { background: rgba(127,231,255,.16); color: #fff; }
@@ -50,7 +55,7 @@ textarea.i { resize: vertical; min-height: 70px; }
 .side .foot button { background: none; border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 6px; padding: 6px; }
 main.content { padding: 24px 28px 60px; min-width: 0; }
 .head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-.head h1 { margin: 0; font: 700 24px/32px var(--f-display); text-wrap: balance; }
+.head h1 { color: var(--brand); margin: 0; font: 700 24px/32px var(--f-display); text-wrap: balance; }
 .head .sub { color: var(--mute); font-size: 14px; }
 .head .right { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 .banner { padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 16px; }
@@ -131,11 +136,14 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* Settings */
-.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+.set-grid .panel { min-width: 0; }
 .set-grid .panel { display: grid; gap: 12px; align-content: start; }
-.plans-edit { width: 100%; font-size: 14px; }
-.plans-edit td, .plans-edit th { padding: 6px; border: 0; }
-.plans-edit input { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; text-align: right; }
+.plans-edit { width: 100%; font-size: 14px; table-layout: fixed; border-collapse: collapse; }
+.plans-edit th { padding: 6px 4px; border: 0; background: none; font-size: 11px; white-space: normal; text-align: right; }
+.plans-edit th:first-child { width: 86px; }
+.plans-edit td { padding: 5px 4px; border: 0; }
+.plans-edit input { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; border: 1px solid var(--line); border-radius: 6px; text-align: right; font-variant-numeric: tabular-nums; }
 .hint { font-size: 12px; color: var(--mute); }
 
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 30; font-size: 14px; }
@@ -145,6 +153,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   .app { grid-template-columns: 1fr; }
   .side { position: sticky; top: 0; height: auto; flex-direction: row; overflow-x: auto; z-index: 10; padding: 10px; gap: 4px; }
   .side .logo, .side .foot { display: none; }
+  .side .m-logo { display: block; height: 28px; width: auto; flex: 0 0 auto; align-self: center; margin-right: 6px; }
+  .set-grid { grid-template-columns: 1fr; }
   .side button.tab { white-space: nowrap; }
   main.content { padding: 16px; }
   .grid2 { grid-template-columns: 1fr; }
@@ -159,9 +169,10 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 <body>
 
 <div class="login hidden" id="login">
+  <img class="brand-logo" src="/images/Logo.svg" alt="MATBAO · Proposal Sponsorship 2027">
   <form id="login-form" autocomplete="on">
-    <h1>MDF 2027 Dashboard</h1>
-    <p>Đăng nhập để quản lý đăng ký của registry.</p>
+    <h1>Dashboard quản lý</h1>
+    <p>Đăng nhập để quản lý đăng ký và MDF của các registry.</p>
     <label class="f">Tên của bạn (ghi vào nhật ký thao tác)<input class="i" id="lg-name" required maxlength="40" autocomplete="name"></label>
     <label class="f">Mật khẩu<input class="i" id="lg-pass" type="password" required autocomplete="current-password"></label>
     <div class="err" id="lg-err" role="alert"></div>
@@ -171,7 +182,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 
 <div class="app hidden" id="app">
   <nav class="side" aria-label="Dashboard">
-    <div class="logo">MAT BAO<small>MDF PROGRAM 2027</small></div>
+    <div class="logo"><img src="/images/Logo.svg" alt="MATBAO · Proposal Sponsorship 2027"><small>MDF Dashboard</small></div>
+    <img class="m-logo" src="/images/Logo-MB.svg" alt="MATBAO">
     <button class="tab on" data-tab="overview">Tổng quan</button>
     <button class="tab" data-tab="regs">Đăng ký <span class="count hidden" id="todo-count"></span></button>
     <button class="tab" data-tab="finance">MDF theo đối tác</button>
