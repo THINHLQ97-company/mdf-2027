@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>MDF 2027 Dashboard</title>
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+/* Layout: sidebar tabs + content; data-dense tables, status as coloured pills. */
+:root {
+  --bg: #f3f5fb; --panel: #ffffff; --ink: #141b3d; --mute: #646d8f; --line: #e2e6f2; --brand: #0b1440; --accent: #2f5bea;
+  --silver: #7a8296; --gold: #b88a00; --diamond: #2b78c2;
+  --ok: #157f3b; --ok-bg: #e2f6e9; --warn: #a15c00; --warn-bg: #fff1d6; --bad: #b42318; --bad-bg: #fde7e5; --info: #2848c9; --info-bg: #e6ecff; --dim-bg: #eef0f5;
+  --f-display: 'Poppins', 'Segoe UI', Arial, sans-serif; --f-body: 'Barlow', 'Segoe UI', Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hidden { display: none !important; }
+
+/* Login */
+.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--brand); }
+.login form { width: 100%; max-width: 380px; background: var(--panel); border-radius: 14px; padding: 28px; display: grid; gap: 14px; }
+.login h1 { margin: 0; font: 700 22px/30px var(--f-display); }
+.login p { margin: 0; color: var(--mute); font-size: 14px; }
+label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--mute); }
+input.i, select.i, textarea.i { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 15px; }
+textarea.i { resize: vertical; min-height: 70px; }
+.btn { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 600; font-size: 14px; }
+.btn:hover { border-color: #c5cbe0; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn.bad { color: var(--bad); border-color: #f2c4bf; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.err { color: var(--bad); font-size: 14px; min-height: 20px; }
+
+/* Shell */
+.app { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.side { background: var(--brand); color: #fff; padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.side .logo { font: 700 15px/20px var(--f-display); letter-spacing: .5px; padding: 0 10px 18px; }
+.side .logo small { display: block; font: 500 11px/16px var(--f-body); letter-spacing: 1.5px; color: #7fe7ff; }
+.side button.tab { text-align: left; background: none; border: 0; color: rgba(255,255,255,.75); padding: 10px 12px; border-radius: 8px; font-weight: 600; display: flex; justify-content: space-between; }
+.side button.tab:hover { background: rgba(255,255,255,.08); color: #fff; }
+.side button.tab.on { background: rgba(127,231,255,.16); color: #fff; }
+.side .count { background: #ffcf4d; color: #1d1600; border-radius: 999px; padding: 0 7px; font-size: 12px; }
+.side .foot { margin-top: auto; font-size: 12px; color: rgba(255,255,255,.6); padding: 10px; display: grid; gap: 8px; }
+.side .foot button { background: none; border: 1px solid rgba(255,255,255,.3); color: #fff; border-radius: 6px; padding: 6px; }
+main.content { padding: 24px 28px 60px; min-width: 0; }
+.head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.head h1 { margin: 0; font: 700 24px/32px var(--f-display); text-wrap: balance; }
+.head .sub { color: var(--mute); font-size: 14px; }
+.head .right { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.banner { padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 16px; }
+.banner.warn { background: var(--warn-bg); color: var(--warn); }
+.banner.info { background: var(--info-bg); color: var(--info); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.panel h2 { margin: 0 0 12px; font: 600 16px/22px var(--f-display); }
+
+/* KPIs */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.kpi .l { font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--mute); }
+.kpi .v { font: 700 26px/34px var(--f-display); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.kpi .s { font-size: 13px; color: var(--mute); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; }
+
+/* Slot bars */
+.plan-row { display: grid; grid-template-columns: 90px minmax(0, 1fr) 150px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.plan-row:first-of-type { border-top: 0; }
+.plan-name { font: 700 14px/18px var(--f-display); letter-spacing: .5px; }
+.plan-name.silver { color: var(--silver); } .plan-name.gold { color: var(--gold); } .plan-name.diamond { color: var(--diamond); }
+.slots { display: flex; gap: 4px; }
+.slot { flex: 1; height: 26px; border-radius: 6px; background: var(--dim-bg); border: 1px dashed #cdd3e3; }
+.slot.c { background: var(--ok); border: 0; }
+.slot.h { background: repeating-linear-gradient(45deg, #ffcf4d 0 6px, #ffe08a 6px 12px); border: 0; }
+.plan-meta { font-size: 13px; color: var(--mute); text-align: right; font-variant-numeric: tabular-nums; }
+.plan-meta b { color: var(--ink); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--mute); margin-top: 8px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+
+/* Lists / tables */
+.todo { display: grid; gap: 8px; }
+.todo button { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 10px; align-items: center; text-align: left; background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.todo button:hover { border-color: #c5cbe0; }
+.todo .t { min-width: 0; }
+.todo .t b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.todo .t span { font-size: 13px; color: var(--mute); }
+.due { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.due.late { color: var(--bad); } .due.soon { color: var(--warn); }
+.empty { color: var(--mute); font-size: 14px; padding: 8px 0; }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.filters input { max-width: 260px; }
+.chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font-size: 13px; font-weight: 600; }
+.chip.on { background: var(--brand); color: #fff; border-color: var(--brand); }
+.table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--mute); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; background: #fafbfe; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: #f7f9ff; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .s { display: block; font-size: 12px; color: var(--mute); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.st-unverified { background: var(--dim-bg); color: var(--mute); }
+.st-on_hold { background: var(--warn-bg); color: var(--warn); }
+.st-confirmed { background: var(--ok-bg); color: var(--ok); }
+.st-waitlist { background: var(--info-bg); color: var(--info); }
+.st-rejected, .st-cancelled { background: var(--bad-bg); color: var(--bad); }
+.st-expired { background: var(--dim-bg); color: #8b92a8; }
+.pay-unpaid { color: var(--mute); } .pay-invoiced { color: var(--info); } .pay-paid { color: var(--ok); font-weight: 700; }
+.flag { color: var(--warn); font-size: 12px; }
+
+/* Drawer */
+.drawer-bg { position: fixed; inset: 0; background: rgba(10,15,40,.35); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--panel); z-index: 21; overflow-y: auto; padding: 22px 24px 40px; box-shadow: -20px 0 50px rgba(0,0,0,.15); }
+.drawer h2 { margin: 0 0 4px; font: 700 20px/28px var(--f-display); padding-right: 40px; }
+.drawer .x { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 18px; }
+dl.kv { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 8px 12px; margin: 16px 0; font-size: 14px; }
+dl.kv dt { color: var(--mute); }
+dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+.box { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-top: 14px; display: grid; gap: 10px; }
+.box h3 { margin: 0; font: 600 14px/20px var(--f-display); }
+.hist { list-style: none; margin: 0; padding: 0; font-size: 13px; display: grid; gap: 6px; }
+.hist li span { color: var(--mute); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Settings */
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.set-grid .panel { display: grid; gap: 12px; align-content: start; }
+.plans-edit { width: 100%; font-size: 14px; }
+.plans-edit td, .plans-edit th { padding: 6px; border: 0; }
+.plans-edit input { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px; text-align: right; }
+.hint { font-size: 12px; color: var(--mute); }
+
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 30; font-size: 14px; }
+.toast.bad { background: var(--bad); }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .side { position: sticky; top: 0; height: auto; flex-direction: row; overflow-x: auto; z-index: 10; padding: 10px; gap: 4px; }
+  .side .logo, .side .foot { display: none; }
+  .side button.tab { white-space: nowrap; }
+  main.content { padding: 16px; }
+  .grid2 { grid-template-columns: 1fr; }
+  .plan-row { grid-template-columns: 70px minmax(0,1fr); }
+  .plan-meta { grid-column: 1 / -1; text-align: left; }
+  dl.kv { grid-template-columns: 1fr; gap: 2px; }
+  dl.kv dd { margin-bottom: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="login hidden" id="login">
+  <form id="login-form" autocomplete="on">
+    <h1>MDF 2027 Dashboard</h1>
+    <p>Đăng nhập để quản lý đăng ký của registry.</p>
+    <label class="f">Tên của bạn (ghi vào nhật ký thao tác)<input class="i" id="lg-name" required maxlength="40" autocomplete="name"></label>
+    <label class="f">Mật khẩu<input class="i" id="lg-pass" type="password" required autocomplete="current-password"></label>
+    <div class="err" id="lg-err" role="alert"></div>
+    <button class="btn primary" type="submit">Đăng nhập</button>
+  </form>
+</div>
+
+<div class="app hidden" id="app">
+  <nav class="side" aria-label="Dashboard">
+    <div class="logo">MAT BAO<small>MDF PROGRAM 2027</small></div>
+    <button class="tab on" data-tab="overview">Tổng quan</button>
+    <button class="tab" data-tab="regs">Đăng ký <span class="count hidden" id="todo-count"></span></button>
+    <button class="tab" data-tab="finance">MDF theo đối tác</button>
+    <button class="tab" data-tab="settings">Cài đặt chương trình</button>
+    <button class="tab" data-tab="mail">Email đã gửi</button>
+    <button class="tab" data-tab="audit">Nhật ký</button>
+    <div class="foot"><span id="me"></span><button type="button" id="logout">Đăng xuất</button></div>
+  </nav>
+  <main class="content" id="content"></main>
+</div>
+
+<div id="drawer-root"></div>
+<div id="toast-root" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var D = null, tab = 'overview', filter = 'active', q = '';
+  var PLANS = ['silver', 'gold', 'diamond'];
+  var ST = { unverified: 'Chờ xác thực email', on_hold: 'Đang giữ chỗ', confirmed: 'Đã xác nhận', waitlist: 'Danh sách chờ', rejected: 'Từ chối', cancelled: 'Đã huỷ', expired: 'Hết hạn' };
+  var PAY = { unpaid: 'Chưa xuất HĐ', invoiced: 'Đã xuất HĐ', paid: 'Đã thanh toán' };
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(n) { return '$' + Math.round(n || 0).toLocaleString('en-US'); }
+  function dt(s) { return s ? new Date(s).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : '–'; }
+  function localInput(s) { if (!s) return ''; var d = new Date(new Date(s).getTime() + 7 * 3600e3); return d.toISOString().slice(0, 16); }
+  function fromLocal(v) { return v ? v + ':00+07:00' : null; }
+  function pill(st) { return '<span class="pill st-' + st + '">' + esc(ST[st] || st) + '</span>'; }
+  function toast(msg, bad) {
+    var el = document.createElement('div'); el.className = 'toast' + (bad ? ' bad' : ''); el.textContent = msg;
+    $('#toast-root').appendChild(el); setTimeout(function () { el.remove(); }, 3200);
+  }
+  function api(path, body) {
+    var opt = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-MDF-Admin': '1' }, body: JSON.stringify(body) };
+    opt.credentials = 'same-origin';
+    return fetch('/admin/api/' + path, opt).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) {
+        if (r.status === 401 && path !== 'login') { showLogin(); throw new Error(b.error || 'Hết phiên đăng nhập'); }
+        if (!r.ok) throw new Error(b.error || 'Lỗi ' + r.status);
+        return b;
+      });
+    });
+  }
+
+  /* ── auth ── */
+  function showLogin() { $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#lg-name').focus(); }
+  $('#login-form').addEventListener('submit', function (e) {
+    e.preventDefault(); $('#lg-err').textContent = '';
+    try { localStorage.setItem('mdf-admin-name', $('#lg-name').value); } catch (x) {}
+    api('login', { name: $('#lg-name').value, password: $('#lg-pass').value }).then(function () { $('#lg-pass').value = ''; load(); })
+      .catch(function (err) { $('#lg-err').textContent = err.message; });
+  });
+  try { $('#lg-name').value = localStorage.getItem('mdf-admin-name') || ''; } catch (x) {}
+  $('#logout').addEventListener('click', function () { api('logout', {}).finally(showLogin); });
+
+  function load() {
+    return api('data').then(function (d) {
+      D = d; $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+      $('#me').textContent = 'Đang đăng nhập: ' + d.me;
+      var todo = d.registrations.filter(function (r) { return r.status === 'on_hold'; }).length;
+      $('#todo-count').textContent = todo; $('#todo-count').classList.toggle('hidden', !todo);
+      render();
+      var m = location.hash.match(/^#reg-([\w-]+)/); if (m) { openReg(m[1]); history.replaceState(null, '', location.pathname); }
+    });
+  }
+
+  document.querySelectorAll('.side .tab').forEach(function (b) {
+    b.addEventListener('click', function () { tab = b.getAttribute('data-tab'); document.querySelectorAll('.side .tab').forEach(function (x) { x.classList.toggle('on', x === b); }); render(); window.scrollTo(0, 0); });
+  });
+
+  function render() {
+    var c = $('#content');
+    c.innerHTML = ({ overview: vOverview, regs: vRegs, finance: vFinance, settings: vSettings, mail: vMail, audit: vAudit })[tab]();
+    bind(c);
+  }
+
+  function stateBanner() {
+    var s = D.status, p = s.program;
+    var txt = s.state === 'upcoming' ? 'Chương trình <b>chưa mở</b>. Mở đăng ký lúc ' + dt(p.startAt) + '.'
+      : s.state === 'closed' ? 'Chương trình <b>đã đóng</b> lúc ' + dt(p.endAt) + '.'
+      : 'Đang mở đăng ký đến ' + dt(p.endAt) + '. Early bird (-' + p.earlyBirdPct + '%) đến ' + dt(p.earlyBirdUntil) + '.';
+    var mail = D.mailProvider === 'outbox' ? ' · <b>Email đang ở chế độ thử (outbox)</b>: chưa gửi ra ngoài.' : ' · Gửi email qua ' + esc(D.mailProvider) + '.';
+    return '<div class="banner ' + (s.state === 'open' ? 'info' : 'warn') + '">' + txt + mail + '</div>';
+  }
+
+  /* ── overview ── */
+  function vOverview() {
+    var st = D.stats, a = D.status.plans, regs = D.registrations;
+    var holds = regs.filter(function (r) { return r.status === 'on_hold'; }).sort(function (x, y) { return x.holdUntil.localeCompare(y.holdUntil); });
+    var wl = regs.filter(function (r) { return r.status === 'waitlist'; });
+    var totalSlots = PLANS.reduce(function (n, k) { return n + a[k].total; }, 0);
+    var used = PLANS.reduce(function (n, k) { return n + a[k].confirmed; }, 0);
+    var h = '<div class="head"><h1>Tổng quan</h1><span class="sub">Cập nhật ' + dt(D.status.now) + '</span><div class="right"><button class="btn" data-act="reload">Làm mới</button></div></div>' + stateBanner();
+    h += '<div class="kpis">' +
+      kpi('MDF đã xác nhận', money(st.confirmedValue), used + '/' + totalSlots + ' suất') +
+      kpi('Đang giữ chỗ', money(st.onHoldValue), (st.byStatus.on_hold || 0) + ' đăng ký chờ duyệt') +
+      kpi('Đã thanh toán', money(st.paidValue), 'Đã xuất HĐ: ' + money(st.invoicedValue)) +
+      kpi('Danh sách chờ', String(st.byStatus.waitlist || 0), 'Chờ xác thực email: ' + (st.byStatus.unverified || 0)) + '</div>';
+    h += '<div class="grid2"><section class="panel"><h2>Tình trạng suất</h2>' + PLANS.map(function (k) {
+      var p = a[k], cells = '';
+      for (var i = 0; i < p.total; i++) cells += '<span class="slot ' + (i < p.confirmed ? 'c' : i < p.confirmed + p.onHold ? 'h' : '') + '"></span>';
+      return '<div class="plan-row"><span class="plan-name ' + k + '">' + k.toUpperCase() + '</span><div class="slots">' + cells + '</div>' +
+        '<span class="plan-meta"><b>' + p.available + '</b> trống · ' + p.onHold + ' giữ · ' + p.confirmed + ' xác nhận' + (p.waitlist ? ' · ' + p.waitlist + ' chờ' : '') + '</span></div>';
+    }).join('') + '<div class="legend"><span><i style="background:var(--ok)"></i>Đã xác nhận</span><span><i style="background:#ffcf4d"></i>Đang giữ chỗ</span><span><i style="background:var(--dim-bg);border:1px dashed #cdd3e3"></i>Còn trống</span></div></section>';
+    h += '<section class="panel"><h2>Cần xử lý</h2><div class="todo">' +
+      (holds.length ? holds.map(todoItem).join('') : '<div class="empty">Không có đăng ký nào đang chờ xác nhận.</div>') +
+      (wl.length ? '<h2 style="margin-top:12px">Danh sách chờ</h2>' + wl.map(todoItem).join('') : '') + '</div></section></div>';
+    return h;
+  }
+  function kpi(l, v, s) { return '<div class="kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>'; }
+  function todoItem(r) {
+    var due = '';
+    if (r.status === 'on_hold') {
+      var left = (new Date(r.holdUntil) - Date.now()) / 3600e3;
+      due = '<span class="due ' + (left < 0 ? 'late' : left < 12 ? 'soon' : '') + '">' + (left < 0 ? 'Quá hạn ' + Math.ceil(-left) + 'h' : 'Còn ' + Math.floor(left) + 'h') + '</span>';
+    }
+    return '<button type="button" data-open="' + r.id + '"><span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span><span class="t"><b>' + esc(r.registry) + '</b><span>' + esc(r.tlds.join(', ')) + ' · ' + esc(r.ref) + (r.flags.length ? ' · <span class="flag">⚠ ' + r.flags.length + '</span>' : '') + '</span></span>' + due + '</button>';
+  }
+
+  /* ── registrations ── */
+  var FILTERS = { active: ['on_hold', 'waitlist', 'unverified'], confirmed: ['confirmed'], all: null, closed: ['rejected', 'cancelled', 'expired'] };
+  var FILTER_LABEL = { active: 'Cần theo dõi', confirmed: 'Đã xác nhận', closed: 'Đã đóng', all: 'Tất cả' };
+  function vRegs() {
+    var list = D.registrations.filter(function (r) {
+      if (FILTERS[filter] && FILTERS[filter].indexOf(r.status) < 0) return false;
+      if (!q) return true;
+      return (r.registry + ' ' + r.tlds.join(' ') + ' ' + r.email + ' ' + r.ref + ' ' + r.contactName).toLowerCase().indexOf(q.toLowerCase()) >= 0;
+    });
+    var h = '<div class="head"><h1>Đăng ký</h1><span class="sub">' + D.registrations.length + ' đăng ký</span><div class="right"><a class="btn" href="/admin/api/export.csv">Xuất CSV</a></div></div>';
+    h += '<div class="filters">' + Object.keys(FILTERS).map(function (k) { return '<button class="chip' + (filter === k ? ' on' : '') + '" data-filter="' + k + '">' + FILTER_LABEL[k] + '</button>'; }).join('') +
+      '<input class="i" id="search" type="search" placeholder="Tìm registry, TLD, email, mã…" value="' + esc(q) + '" aria-label="Tìm kiếm"></div>';
+    h += '<div class="table-wrap"><table><thead><tr><th>Mã / Ngày</th><th>Registry · TLD</th><th>Gói</th><th>Trạng thái</th><th>Hạn xác nhận</th><th class="num">Giá trị</th><th>Thanh toán</th></tr></thead><tbody>' +
+      (list.length ? list.map(function (r) {
+        return '<tr data-open="' + r.id + '"><td><b>' + esc(r.ref) + '</b><span class="s">' + dt(r.createdAt) + '</span></td>' +
+          '<td><b>' + esc(r.registry) + '</b><span class="s">' + esc(r.tlds.join(', ')) + ' · ' + esc(r.email) + '</span>' + (r.flags.length ? '<span class="flag">⚠ ' + esc(r.flags.join(' · ')) + '</span>' : '') + '</td>' +
+          '<td><span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span><span class="s">' + (r.billing === 'half' ? 'Nửa năm' : 'Cả năm') + (r.earlyBird ? ' · EB' : '') + '</span></td>' +
+          '<td>' + pill(r.status) + '</td><td>' + (r.status === 'on_hold' ? dt(r.holdUntil) : r.status === 'unverified' ? '<span class="s">Link hết hạn ' + dt(r.verifyExpiresAt) + '</span>' : '–') + '</td>' +
+          '<td class="num">' + money(r.price) + '</td><td class="pay-' + r.payment + '">' + (r.status === 'confirmed' ? PAY[r.payment] : '–') + '</td></tr>';
+      }).join('') : '<tr><td colspan="7" class="empty">Không có đăng ký nào trong nhóm này.</td></tr>') + '</tbody></table></div>';
+    return h;
+  }
+
+  /* ── finance ── */
+  function vFinance() {
+    var conf = D.registrations.filter(function (r) { return r.status === 'confirmed'; });
+    var st = D.stats;
+    var h = '<div class="head"><h1>MDF theo đối tác</h1><span class="sub">Chỉ tính các gói đã xác nhận</span><div class="right"><a class="btn" href="/admin/api/export.csv">Xuất CSV</a></div></div>';
+    h += '<div class="kpis">' + kpi('Tổng MDF xác nhận', money(st.confirmedValue), conf.length + ' đối tác') + kpi('Đã thanh toán', money(st.paidValue), money(st.confirmedValue - st.paidValue) + ' còn phải thu') +
+      kpi('Đã xuất hoá đơn', money(st.invoicedValue), 'chưa thanh toán') + kpi('Giảm giá early bird', money(st.earlyBirdDiscount), 'so với giá niêm yết') + '</div>';
+    h += '<div class="panel" style="margin-bottom:16px"><h2>Theo gói</h2><div class="table-wrap" style="border:0"><table><thead><tr><th>Gói</th><th class="num">Suất xác nhận</th><th class="num">MDF xác nhận</th><th class="num">Đang giữ chỗ</th></tr></thead><tbody>' +
+      PLANS.map(function (k) { var p = D.status.plans[k]; return '<tr><td><span class="plan-name ' + k + '">' + k.toUpperCase() + '</span></td><td class="num">' + p.confirmed + '/' + p.total + '</td><td class="num">' + money(st.byPlan[k].confirmedValue) + '</td><td class="num">' + money(st.byPlan[k].onHoldValue) + '</td></tr>'; }).join('') +
+      '<tr><td><b>Tổng</b></td><td></td><td class="num"><b>' + money(st.confirmedValue) + '</b></td><td class="num">' + money(st.onHoldValue) + '</td></tr></tbody></table></div></div>';
+    h += '<div class="table-wrap"><table><thead><tr><th>Registry · TLD</th><th>Gói</th><th class="num">MDF</th><th>Hợp đồng</th><th>Thanh toán</th><th>Xác nhận</th></tr></thead><tbody>' +
+      (conf.length ? conf.map(function (r) {
+        return '<tr data-open="' + r.id + '"><td><b>' + esc(r.registry) + '</b><span class="s">' + esc(r.tlds.join(', ')) + '</span></td><td><span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span><span class="s">' + (r.billing === 'half' ? 'Nửa năm' : 'Cả năm') + '</span></td>' +
+          '<td class="num">' + money(r.price) + '</td><td>' + (r.contractSigned ? '✓ Đã ký' : '<span class="s">Chưa ký</span>') + '</td><td class="pay-' + r.payment + '">' + PAY[r.payment] + '</td><td>' + dt(r.confirmedAt) + '<span class="s">' + esc(r.confirmedBy || '') + '</span></td></tr>';
+      }).join('') : '<tr><td colspan="6" class="empty">Chưa có gói nào được xác nhận.</td></tr>') + '</tbody></table></div>';
+    return h;
+  }
+
+  /* ── settings ── */
+  function vSettings() {
+    var s = D.settings, p = s.program;
+    var h = '<div class="head"><h1>Cài đặt chương trình</h1></div>' + stateBanner() + '<form id="set-form" class="set-grid">';
+    h += '<section class="panel"><h2>Thời gian (giờ Việt Nam)</h2>' +
+      '<label class="f">Mở đăng ký<input class="i" type="datetime-local" id="s-start" value="' + localInput(p.startAt) + '" required></label>' +
+      '<label class="f">Đóng đăng ký<input class="i" type="datetime-local" id="s-end" value="' + localInput(p.endAt) + '" required></label>' +
+      '<label class="f">Early bird đến<input class="i" type="datetime-local" id="s-eb" value="' + localInput(p.earlyBirdUntil) + '" required></label>' +
+      '<label class="f">Mức giảm early bird (%)<input class="i" type="number" id="s-ebpct" min="0" max="50" step="0.5" value="' + p.earlyBirdPct + '"></label>' +
+      '<p class="hint">Trước giờ mở và sau giờ đóng, form trên trang tự khoá. Giá early bird chỉ áp dụng gói cả năm.</p></section>';
+    h += '<section class="panel"><h2>Gói và số suất</h2><table class="plans-edit"><thead><tr><th></th><th>Giá năm ($)</th><th>Nửa năm ($)</th><th>Số suất</th></tr></thead><tbody>' +
+      PLANS.map(function (k) { var x = s.plans[k]; return '<tr><td><span class="plan-name ' + k + '">' + k.toUpperCase() + '</span></td><td><input type="number" min="0" data-plan="' + k + '" data-f="list" value="' + x.list + '"></td><td><input type="number" min="0" data-plan="' + k + '" data-f="half" value="' + x.half + '"></td><td><input type="number" min="0" max="20" data-plan="' + k + '" data-f="slots" value="' + x.slots + '"></td></tr>'; }).join('') +
+      '</tbody></table><p class="hint">Số suất còn trống trên trang = số suất − đã xác nhận − đang giữ chỗ. Đổi giá không ảnh hưởng đăng ký đã gửi.</p></section>';
+    h += '<section class="panel"><h2>Quy tắc giữ chỗ và chống spam</h2>' +
+      '<label class="f">Thời hạn Mắt Bão xác nhận (giờ)<input class="i" type="number" id="s-hold" min="1" value="' + s.holdHours + '"></label>' +
+      '<label class="f">Link xác thực email hết hạn sau (giờ)<input class="i" type="number" id="s-verify" min="1" value="' + s.verifyHours + '"></label>' +
+      '<label class="f">Tối đa gói đang giữ/xác nhận cho mỗi tên miền email<input class="i" type="number" id="s-dom" min="1" value="' + s.maxActivePerDomain + '"></label>' +
+      '<p class="hint">Suất chỉ được giữ sau khi registry bấm link xác thực trong email. Quá hạn xác nhận, team nhận email nhắc; suất không tự nhả để registry không bị thiệt.</p></section>';
+    h += '<section class="panel"><h2>Email</h2>' +
+      '<label class="f">Email team nhận thông báo (mỗi dòng một địa chỉ)<textarea class="i" id="s-team" rows="3">' + esc(s.teamEmails.join('\n')) + '</textarea></label>' +
+      '<label class="f">Reply-to cho email gửi registry<input class="i" type="email" id="s-reply" value="' + esc(s.replyTo) + '"></label>' +
+      '<p class="hint">Kênh gửi hiện tại: <b>' + esc(D.mailProvider) + '</b>. Đổi trong biến môi trường MAIL_PROVIDER.</p>' +
+      '<div class="row2"><input class="i" type="email" id="s-test" placeholder="email nhận thử"><button class="btn" type="button" data-act="test-email">Gửi email thử</button></div></section>';
+    h += '<div style="grid-column:1/-1"><button class="btn primary" type="submit">Lưu cài đặt</button></div></form>';
+    return h;
+  }
+
+  /* ── mail log / audit ── */
+  function vMail() {
+    return '<div class="head"><h1>Email đã gửi</h1><span class="sub">200 email gần nhất</span></div><div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Người nhận</th><th>Tiêu đề</th><th>Kết quả</th></tr></thead><tbody>' +
+      (D.mailLog.length ? D.mailLog.map(function (m) {
+        return '<tr' + (m.regId ? ' data-open="' + m.regId + '"' : '') + '><td>' + dt(m.at) + '</td><td>' + esc(m.tag) + '</td><td>' + esc(m.to) + '</td><td>' + esc(m.subject) + '</td><td>' + (m.ok ? '<span class="pill st-confirmed">' + esc(m.provider) + '</span>' : '<span class="pill st-rejected">Lỗi</span><span class="s">' + esc(m.error) + '</span>') + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="empty">Chưa có email nào.</td></tr>') + '</tbody></table></div>';
+  }
+  function vAudit() {
+    return '<div class="head"><h1>Nhật ký thao tác</h1></div><div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Thao tác</th><th>Chi tiết</th></tr></thead><tbody>' +
+      D.audit.map(function (a) { return '<tr' + (a.regId ? ' data-open="' + a.regId + '"' : '') + '><td>' + dt(a.at) + '</td><td>' + esc(a.by) + '</td><td>' + esc(a.action) + '</td><td>' + esc(a.detail) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+  }
+
+  /* ── drawer ── */
+  function openReg(id) {
+    var r = D.registrations.filter(function (x) { return x.id === id; })[0];
+    if (!r) return;
+    var a = D.status.plans[r.plan];
+    var acts = '';
+    if (r.status === 'on_hold') acts += '<button class="btn ok" data-do="confirm">Xác nhận gói và gửi Registrar Obligation</button><button class="btn bad" data-do="reject">Từ chối và nhả suất</button>';
+    if (r.status === 'waitlist') acts += '<button class="btn primary" data-do="promote"' + (a.available < 1 ? ' disabled title="Gói chưa có suất trống"' : '') + '>Chuyển sang giữ chỗ</button><button class="btn bad" data-do="reject">Từ chối</button>';
+    if (r.status === 'unverified') acts += '<button class="btn bad" data-do="reject">Huỷ yêu cầu</button>';
+    if (r.status === 'confirmed') acts += '<a class="btn" href="' + esc(r.obligationUrl) + '" target="_blank" rel="noopener">Mở Registrar Obligation</a><button class="btn bad" data-do="cancel">Huỷ gói (nhả suất)</button>';
+    if (['unverified', 'on_hold', 'waitlist', 'confirmed'].indexOf(r.status) >= 0) acts += '<button class="btn" data-do="resend">Gửi lại email</button>';
+    var h = '<div class="drawer-bg" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" tabindex="-1">' +
+      '<button class="x" data-close aria-label="Đóng">×</button><h2 id="dr-title">' + esc(r.registry) + '</h2><div>' + pill(r.status) + ' <span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span> · ' + esc(r.ref) + '</div>' +
+      (r.flags.length ? '<div class="banner warn" style="margin-top:12px">⚠ ' + esc(r.flags.join(' · ')) + '</div>' : '') +
+      '<dl class="kv"><dt>TLD</dt><dd><b>' + esc(r.tlds.join(', ')) + '</b></dd><dt>Giá trị</dt><dd>' + money(r.price) + (r.billing === 'half' ? ' / nửa năm' : ' / năm') + (r.earlyBird ? ' (early bird)' : '') + '</dd>' +
+      '<dt>Liên hệ</dt><dd>' + esc(r.contactName) + (r.jobTitle ? ', ' + esc(r.jobTitle) : '') + '<br>' + esc(r.email) + (r.phone ? '<br>' + esc(r.phone) : '') + '</dd>' +
+      '<dt>Tham gia 2026</dt><dd>' + (r.participated2026 ? 'Có' : 'Không') + '</dd>' + (r.notes ? '<dt>Ghi chú registry</dt><dd>' + esc(r.notes) + '</dd>' : '') +
+      '<dt>Gửi lúc</dt><dd>' + dt(r.createdAt) + '</dd><dt>Xác thực email</dt><dd>' + dt(r.verifiedAt) + '</dd>' +
+      (r.holdUntil ? '<dt>Hạn xác nhận</dt><dd>' + dt(r.holdUntil) + '</dd>' : '') + (r.confirmedAt ? '<dt>Xác nhận</dt><dd>' + dt(r.confirmedAt) + ' · ' + esc(r.confirmedBy) + '</dd>' : '') + '</dl>' +
+      '<label class="f">Ghi chú gửi kèm email (khi từ chối/huỷ)<textarea class="i" id="dr-note" rows="2" placeholder="Không bắt buộc"></textarea></label>' +
+      '<div class="actions">' + acts + '</div>' +
+      (r.status === 'confirmed' ? '<div class="box"><h3>Hợp đồng và thanh toán</h3><div class="row2"><label class="f">Thanh toán<select class="i" id="dr-pay">' + Object.keys(PAY).map(function (k) { return '<option value="' + k + '"' + (r.payment === k ? ' selected' : '') + '>' + PAY[k] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="f">Giá trị MDF ($)<input class="i" type="number" id="dr-price" min="0" value="' + r.price + '"></label></div><label><input type="checkbox" id="dr-contract"' + (r.contractSigned ? ' checked' : '') + '> Đã ký hợp đồng</label>' : '<div class="box"><h3>Ghi chú nội bộ</h3>') +
+      '<textarea class="i" id="dr-internal" rows="3" placeholder="Ghi chú nội bộ, registry không thấy">' + esc(r.internalNote) + '</textarea><div><button class="btn primary" data-do="update">Lưu</button></div></div>' +
+      '<div class="box"><h3>Lịch sử</h3><ul class="hist">' + r.history.slice().reverse().map(function (x) { return '<li><span>' + dt(x.at) + ' · ' + esc(x.by) + ':</span> ' + esc(x.action) + (x.note ? ' – ' + esc(x.note) : '') + '</li>'; }).join('') + '</ul></div></aside>';
+    var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
+    root.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
+    root.querySelectorAll('[data-do]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var act = b.getAttribute('data-do'), body = { action: act, note: $('#dr-note').value };
+        var ask = { confirm: 'Xác nhận gói ' + r.plan.toUpperCase() + ' cho ' + r.registry + '? Email kèm Registrar Obligation sẽ được gửi ngay.', reject: 'Từ chối đăng ký này và nhả suất?', cancel: 'Huỷ gói đã xác nhận và nhả suất?' }[act];
+        if (ask && !inlineConfirm(b, ask)) return;
+        if (act === 'cancel') body.notify = true;
+        if (act === 'update') { body.internalNote = $('#dr-internal').value; if ($('#dr-pay')) { body.payment = $('#dr-pay').value; body.contractSigned = $('#dr-contract').checked; body.price = Number($('#dr-price').value); } }
+        b.disabled = true;
+        api('reg/' + r.id, body).then(function () { toast({ confirm: 'Đã xác nhận và gửi email', reject: 'Đã từ chối', cancel: 'Đã huỷ gói', promote: 'Đã chuyển sang giữ chỗ', resend: 'Đã gửi lại email', update: 'Đã lưu' }[act]); return load(); })
+          .then(function () { openReg(r.id); }).catch(function (e) { b.disabled = false; toast(e.message, true); });
+      });
+    });
+  }
+  // Two-step confirm inside the button itself (no browser dialogs).
+  function inlineConfirm(b, msg) {
+    if (b.getAttribute('data-armed')) return true;
+    b.setAttribute('data-armed', '1'); b.dataset.label = b.textContent; b.textContent = 'Bấm lần nữa để chắc chắn';
+    b.title = msg; toast(msg);
+    setTimeout(function () { if (b.isConnected) { b.removeAttribute('data-armed'); b.textContent = b.dataset.label; } }, 5000);
+    return false;
+  }
+  function closeDrawer() { $('#drawer-root').innerHTML = ''; }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+
+  /* ── bindings ── */
+  function bind(c) {
+    c.querySelectorAll('[data-open]').forEach(function (el) { el.addEventListener('click', function () { openReg(el.getAttribute('data-open')); }); });
+    c.querySelectorAll('[data-filter]').forEach(function (el) { el.addEventListener('click', function () { filter = el.getAttribute('data-filter'); render(); }); });
+    var s = c.querySelector('#search');
+    if (s) s.addEventListener('input', function () { q = s.value; var pos = s.selectionStart; render(); var n = $('#search'); n.focus(); n.setSelectionRange(pos, pos); });
+    var rl = c.querySelector('[data-act="reload"]'); if (rl) rl.addEventListener('click', function () { load().then(function () { toast('Đã làm mới'); }); });
+    var te = c.querySelector('[data-act="test-email"]');
+    if (te) te.addEventListener('click', function () { api('test-email', { to: $('#s-test').value }).then(function () { toast('Đã gửi email thử'); load(); }).catch(function (e) { toast(e.message, true); }); });
+    var f = c.querySelector('#set-form');
+    if (f) f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var plans = {}; PLANS.forEach(function (k) { plans[k] = {}; });
+      f.querySelectorAll('[data-plan]').forEach(function (i) { plans[i.getAttribute('data-plan')][i.getAttribute('data-f')] = Number(i.value); });
+      var body = {
+        program: { startAt: fromLocal($('#s-start').value), endAt: fromLocal($('#s-end').value), earlyBirdUntil: fromLocal($('#s-eb').value), earlyBirdPct: Number($('#s-ebpct').value) },
+        plans: plans, holdHours: Number($('#s-hold').value), verifyHours: Number($('#s-verify').value), maxActivePerDomain: Number($('#s-dom').value),
+        teamEmails: $('#s-team').value.split(/[\s,;]+/).filter(Boolean), replyTo: $('#s-reply').value
+      };
+      if (new Date(body.program.endAt) <= new Date(body.program.startAt)) return toast('Ngày đóng phải sau ngày mở.', true);
+      api('settings', body).then(function () { toast('Đã lưu cài đặt'); load(); }).catch(function (e) { toast(e.message, true); });
+    });
+  }
+
+  load().catch(function () { showLogin(); });
+  setInterval(function () { if (!document.hidden && D && !$('#drawer-root').innerHTML && tab === 'overview') load().catch(function () {}); }, 60000);
+})();
+</script>
+</body>
+</html>

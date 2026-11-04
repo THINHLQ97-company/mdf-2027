@@ -8,7 +8,7 @@
   var PASSWORD = '@mdf2027';
   var STORAGE_KEY = 'mdf2027-authed';
   // Early bird deadline (GMT+7). Prices drop back to list price automatically after this moment.
-  var EARLY_BIRD_DEADLINE = new Date('2026-12-31T23:59:59+07:00');
+  var EARLY_BIRD_DEADLINE = new Date('2026-11-30T23:59:59+07:00');
   function isEarlyBird() { return Date.now() < EARLY_BIRD_DEADLINE.getTime(); }
   var SLIDES = ['hero', 'sec-intro', 'sec-benefits', 'sec-guarantee', 'sec-packages', 'sec-comparison', 'sec-about', 'sec-book'];
   // Pages with their own scroll: wheel scrolls the page first, only switches slide at the top/bottom edge.
@@ -113,7 +113,7 @@
     var wrap = root.querySelector('.title-countdown');
     var units = root.querySelectorAll('.time-countdown u');
     if (units.length < 3) return;
-    if (!isEarlyBird()) { if (wrap) wrap.style.display = 'none'; return; }
+    if (!isEarlyBird() || PROGRAM.state !== 'open') { if (wrap) wrap.style.display = 'none'; return; }
     function pad(n) { return (n < 10 ? '0' : '') + n; }
     function tick() {
       var total = Math.floor(Math.max(0, EARLY_BIRD_DEADLINE.getTime() - Date.now()) / 1000);
@@ -162,6 +162,7 @@
     { key: 'diamond', list: 6500, half: 3575, slots: 2, total: 2, features: ['searchDiamond', 'suggestDiamond', 'vibeDiamond', 'cartPopup', 'guarantee', 'boostDiamond', 'merchDiamond'], isNew: ['vibeDiamond', 'cartPopup', 'guarantee'] }
   ];
   var EARLY_DISCOUNT = 0.05;
+  var PROGRAM = { state: 'open', startAt: null, endAt: null, live: false };
   function money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
   function priceOf(p) { return isEarlyBird() ? p.list * (1 - EARLY_DISCOUNT) : p.list; }
 
@@ -180,7 +181,10 @@
         '<button type="button" class="cta" data-book="' + p.key + '">' + esc(t.cta) + '</button>' +
           '<button type="button" class="ob-link" data-ob="' + p.key + '">View Registrar Obligation</button>' +
         '<ul>' + p.features.map(function (f) { return '<li' + (p.isNew && p.isNew.indexOf(f) >= 0 ? ' class="new"' : '') + '>' + esc(t.features[f]) + '</li>'; }).join('') + '</ul>' +
-        '<div class="note">' + esc(p.key === 'diamond' ? t.exclusive : t.limited) + ' <b>' + p.slots + '</b> ' + esc(p.slots === 1 ? t.slotAvailable : t.slotsAvailable) + '</div></div>';
+        '<div class="note">' + (p.slots > 0
+          ? esc(p.key === 'diamond' ? t.exclusive : t.limited) + ' <b>' + p.slots + '</b> ' + esc(p.slots === 1 ? t.slotAvailable : t.slotsAvailable)
+          : '<b>Fully booked</b> · waitlist open') +
+          (p.onHold ? '<span class="hold-note">' + p.onHold + ' on hold, awaiting confirmation</span>' : '') + '</div></div>';
     }).join('') + '</div>';
     box.insertAdjacentHTML('beforeend', h);
     box.querySelectorAll('[data-book]').forEach(function (b) {
@@ -191,8 +195,9 @@
   /* ───────────── Book your plan: Plan → Details → Review & reserve ─────────────
      State lives in `bk`. A draft is kept in localStorage so a half-filled form survives a reload.
      submitRegistration() is the hand-off point for the backend / Sendify flow (part 3). */
-  var HOLD_HOURS = 72;
+  var HOLD_HOURS = 48;
   var DRAFT_KEY = 'mdf2027-booking-draft';
+  var formStartedAt = Date.now();
   var BK_STEPS = ['plan', 'details', 'review'];
   var bk = {
     step: 0, done: null, errors: {},
@@ -215,6 +220,11 @@
   }
   function clearDraft() { try { window.localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ } }
 
+  function fmtDate(d) { return new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) + ' (GMT+7)'; }
+  function slotText(p) {
+    var s = p.slots > 0 ? p.slots + ' ' + (p.slots === 1 ? 'slot' : 'slots') + ' left' : 'Fully booked · join the waitlist';
+    return s + (p.onHold ? ' · ' + p.onHold + ' on hold' : '');
+  }
   function planOf(key) { return PACKAGES.filter(function (p) { return p.key === key; })[0]; }
   function parseTlds(s) {
     return String(s).split(/[\s,;]+/).map(function (x) { x = x.trim().toLowerCase(); return x ? (x.charAt(0) === '.' ? x : '.' + x) : ''; })
@@ -265,13 +275,18 @@
   }
 
   function renderPlanStep() {
+    if (PROGRAM.state !== 'open') {
+      return '<div class="bk-closed"><strong>' + (PROGRAM.state === 'upcoming' ? 'Registration opens soon' : 'Registration is closed') + '</strong><p>' +
+        (PROGRAM.state === 'upcoming' ? 'Bookings for MDF 2027 open on <b>' + esc(fmtDate(PROGRAM.startAt)) + '</b>.' : 'MDF 2027 bookings closed on <b>' + esc(fmtDate(PROGRAM.endAt)) + '</b>.') +
+        ' Questions? Email marcom@matbao.com.</p></div>';
+    }
     var h = '<div class="bk-plans" role="radiogroup" aria-label="Package">' + PACKAGES.map(function (p) {
       var full = p.slots <= 0;
       return '<label class="bk-plan ' + p.key + (bk.plan === p.key ? ' sel' : '') + (full ? ' full' : '') + '" for="bk-plan-' + p.key + '">' +
         '<input type="radio" name="bk-plan" id="bk-plan-' + p.key + '" value="' + p.key + '"' + (bk.plan === p.key ? ' checked' : '') + '>' +
         '<span class="nm">' + p.key.toUpperCase() + (p.popular ? ' <em>Most popular</em>' : '') + '</span>' +
         '<span class="pr">' + money(priceOf(p)) + '<small>/year</small></span>' +
-        '<span class="sl">' + (full ? 'Fully booked · join the waitlist' : p.slots + ' ' + (p.slots === 1 ? 'slot' : 'slots') + ' left') + '</span></label>';
+        '<span class="sl">' + slotText(p) + '</span></label>';
     }).join('') + '</div>' + err('plan');
     var p = planOf(bk.plan);
     h += '<div class="bk-field"><span class="bk-lbl" id="bill-lbl">Billing cycle</span><div class="bk-seg" role="radiogroup" aria-labelledby="bill-lbl">' +
@@ -296,6 +311,7 @@
       '<label class="' + (bk.participated === 'yes' ? 'sel' : '') + '"><input type="radio" name="bk-part" value="yes"' + (bk.participated === 'yes' ? ' checked' : '') + '>Yes</label>' +
       '<label class="' + (bk.participated === 'no' ? 'sel' : '') + '"><input type="radio" name="bk-part" value="no"' + (bk.participated === 'no' ? ' checked' : '') + '>No</label></div>' + err('participated') + '</div>' +
       field('notes', 'Anything we should know?', 'textarea', 'Launch plans, promo pricing, preferred start month…', false) +
+      '<div class="bk-hp" aria-hidden="true"><label for="bk-website">Website</label><input id="bk-website" name="website" tabindex="-1" autocomplete="off"></div>' +
       '<div class="bk-actions"><button type="button" class="bk-btn ghost" data-bk-act="back">Back</button><button type="button" class="bk-btn primary" data-bk-act="next">Review</button></div>';
     return h;
   }
@@ -313,19 +329,28 @@
       row('Joined in 2026', bk.participated === 'yes' ? 'Yes' : 'No', 1) +
       (bk.notes.trim() ? row('Notes', esc(bk.notes), 1) : '') + '</dl>' +
       '<label class="bk-consent' + (bk.errors.consent ? ' has-err' : '') + '" for="bk-consent"><input type="checkbox" id="bk-consent"' + (bk.consent ? ' checked' : '') + '>' +
-      '<span>I understand my slot is held for ' + HOLD_HOURS + ' hours. If the contract is not signed in that time, the slot is released to the next registry.</span></label>' + err('consent') +
+      '<span>I understand my slot is only held after I confirm my email address, and that Mat Bao will confirm my package within ' + HOLD_HOURS + ' hours.</span></label>' + err('consent') +
       '<div class="bk-actions"><button type="button" class="bk-btn ghost" data-bk-act="back">Back</button><button type="button" class="bk-btn primary" data-bk-act="submit">Reserve my slot</button></div>';
     return h;
   }
 
   function renderDone() {
     var d = bk.done;
+    if (!d.preview) {
+      return '<div class="bk-done"><div class="bk-tick mail" aria-hidden="true">✉</div><strong>Check your inbox</strong>' +
+        '<p>We sent a confirmation link to <b>' + esc(d.email) + '</b>.</p>' +
+        '<p>Reference <b>' + esc(d.ref) + '</b> · ' + esc(d.plan.toUpperCase()) + '</p>' +
+        '<ol class="bk-next"><li><b>Now</b> Open the email and click “Confirm and hold my slot”' + (d.verifyBy ? ' before ' + esc(d.verifyBy) : '') + '</li>' +
+        '<li><b>After you confirm</b> ' + (d.planFull ? 'You join the waitlist, as all slots are currently reserved' : 'Your slot is on hold and shown as reserved to other registries') + '</li>' +
+        '<li><b>Within ' + HOLD_HOURS + ' hours</b> Mat Bao confirms your package and sends your Registrar Obligation</li>' +
+        '<li><b>Then</b> Contract, invoice and kick-off</li></ol>' +
+        '<p class="bk-small">No email? Check your spam folder, or email marcom@matbao.com.</p>' +
+        '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book another package</button></div>';
+    }
     return '<div class="bk-done"><div class="bk-tick" aria-hidden="true">✓</div><strong>Your slot is reserved</strong>' +
       '<p>Reference <b>' + esc(d.ref) + '</b> · ' + esc(d.plan.toUpperCase()) + '</p>' +
       '<p>Held until <b>' + esc(d.holdUntil) + '</b> (GMT+7)</p>' +
-      '<ol class="bk-next"><li><b>Now</b> Confirmation email to ' + esc(d.email) + '</li><li><b>Within 1 business day</b> Contract and invoice from our team</li><li><b>Before the hold ends</b> Sign the contract to secure your slot</li><li><b>After payment</b> Kick-off and your benefits go live</li></ol>' +
-      '<button type="button" class="bk-btn primary bk-ob" data-ob="' + esc(d.plan) + '" data-ob-tlds="' + esc(d.tlds.join(', ')) + '" data-ob-ref="' + esc(d.ref) + '" data-ob-reg="' + esc(d.registry) + '">View your Registrar Obligation</button>' +
-      (d.preview ? '<p class="bk-preview">Preview mode: this registration was not sent anywhere yet.</p>' : '') +
+      '<p class="bk-preview">Preview mode: this registration was not sent anywhere yet.</p>' +
       '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book another package</button></div>';
   }
 
@@ -336,7 +361,7 @@
     var bar = document.getElementById('mdf-sumbar');
     if (bar) {
       bar.hidden = !q || !!bk.done;
-      if (q) bar.innerHTML = '<span class="pl ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</span><b>' + money(q.amount) + '<small>' + q.unit + '</small></b><span class="sl">' + q.plan.slots + ' of ' + q.plan.total + ' slots left</span>';
+      if (q) bar.innerHTML = '<span class="pl ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</span><b>' + money(q.amount) + '<small>' + q.unit + '</small></b><span class="sl">' + slotText(q.plan) + '</span>';
     }
     var h = '<strong>Your reservation</strong>';
     if (!q) {
@@ -345,8 +370,8 @@
       h += '<div class="bk-sum-plan ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</div>' +
         '<div class="bk-sum-price">' + money(q.amount) + '<small>' + q.unit + '</small></div>' +
         (q.early ? '<div class="bk-sum-save">Early bird: you save ' + money(q.plan.list - priceOf(q.plan)) + '</div>' : '') +
-        '<ul class="bk-sum-list"><li>' + (q.plan.slots > 0 ? q.plan.slots + ' of ' + q.plan.total + ' slots left' : 'Fully booked') + '</li>' +
-        '<li>Slot held ' + HOLD_HOURS + ' hours after you submit</li>' +
+        '<ul class="bk-sum-list"><li>' + slotText(q.plan) + ' (of ' + q.plan.total + ')</li>' +
+        '<li>Slot held once you confirm your email · Mat Bao confirms within ' + HOLD_HOURS + ' hours</li>' +
         (bk.tlds && parseTlds(bk.tlds).length ? '<li>TLD(s): ' + parseTlds(bk.tlds).map(esc).join(' · ') + '</li>' : '') + '</ul>';
     }
     h += '<p class="bk-sum-foot">First come, first served. Slots are confirmed in the order registrations arrive.</p>';
@@ -397,18 +422,24 @@
         plan: bk.plan, billing: bk.billing, price: q.amount, earlyBird: q.early,
         registry: bk.registry.trim(), tlds: parseTlds(bk.tlds), contactName: bk.contactName.trim(), jobTitle: bk.jobTitle.trim(),
         email: bk.email.trim(), phone: bk.phone.trim(), participated2026: bk.participated === 'yes', notes: bk.notes.trim(),
-        submittedAt: new Date().toISOString()
+        submittedAt: new Date().toISOString(), consent: true,
+        website: (document.getElementById('bk-website') || {}).value || '', elapsedMs: Date.now() - formStartedAt
       };
       submitRegistration(payload).then(function (res) {
         bk.done = {
           ref: res.ref, plan: bk.plan, email: payload.email, preview: !!res.preview, tlds: payload.tlds, registry: payload.registry,
-          holdUntil: new Date(res.holdUntil).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
+          planFull: !!(planOf(bk.plan) && planOf(bk.plan).slots < 1),
+          verifyBy: res.verifyExpiresAt ? fmtDate(res.verifyExpiresAt) : '',
+          holdUntil: new Date(res.holdUntil || Date.now()).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
         };
         clearDraft();
         renderForm();
-      }, function () {
+      }, function (err) {
         btn.disabled = false; btn.textContent = 'Reserve my slot';
-        bk.errors = { consent: 'We could not reserve your slot. Check your connection and try again, or email marcom@matbao.com.' };
+        var f = (err && err.fields) || {};
+        bk.errors = Object.assign({}, f, { consent: (err && err.message) || 'We could not reserve your slot. Check your connection and try again, or email marcom@matbao.com.' });
+        if (f.registry || f.tlds || f.contactName || f.email) bk.step = 1;
+        if (f.plan) bk.step = 0;
         renderForm();
       });
     } else if (act === 'restart') {
@@ -557,6 +588,24 @@
       else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
     }
   });
+
+  /* ───────────── Live data from the server (js/mdf-api.js calls this) ───────────── */
+  window.MDF_APP = {
+    applyStatus: function (st) {
+      if (!st || !st.plans) return;
+      PROGRAM.live = true; PROGRAM.state = st.state; PROGRAM.startAt = st.program.startAt; PROGRAM.endAt = st.program.endAt;
+      EARLY_BIRD_DEADLINE = new Date(st.program.earlyBirdUntil);
+      EARLY_DISCOUNT = (st.program.earlyBirdPct || 0) / 100;
+      if (st.holdHours) HOLD_HOURS = st.holdHours;
+      PACKAGES.forEach(function (p) {
+        var s = st.plans[p.key]; if (!s) return;
+        p.list = s.list; p.half = s.half; p.total = s.total; p.slots = s.available; p.onHold = s.onHold;
+      });
+      if (document.getElementById('pkg-container')) { renderPackages(); renderForm(); }
+      var wrap = root.querySelector('.title-countdown');
+      if (wrap) wrap.style.display = (PROGRAM.state === 'open' && isEarlyBird()) ? '' : 'none';
+    }
+  };
 
   /* ───────────── Start ───────────── */
   if (isAuthed()) mountDeck(); else mountGate();

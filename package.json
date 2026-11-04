@@ -1,0 +1,8 @@
+{
+  "name": "mdf-2027",
+  "private": true,
+  "description": "Mat Bao MDF Program 2027: landing page, registration API and admin dashboard",
+  "scripts": { "start": "node server/server.js" },
+  "engines": { "node": ">=18" },
+  "optionalDependencies": { "nodemailer": "^6.9.16" }
+}
