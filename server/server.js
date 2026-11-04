@@ -382,7 +382,7 @@ async function admin(req, res, url) {
 
 /* ── static files ── */
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.json': 'application/json' };
-const BLOCKED = /^\/(server|data|node_modules|\.git|\.env|package(-lock)?\.json|README\.md|\.gitignore)(\/|$)/;
+const BLOCKED = /^\/(server|data|node_modules|\.git|\.env|\.env\.example|\.dockerignore|Dockerfile|index\.js|package(-lock)?\.json|README\.md|\.gitignore)(\/|$)/;
 function serveStatic(req, res, url) {
   let p = decodeURIComponent(url.pathname);
   if (BLOCKED.test(p) || p.includes('\0')) return send(res, 404, 'Not found');
@@ -437,7 +437,8 @@ async function sweep() {
 }
 setInterval(() => sweep().catch((e) => console.error('sweep', e)), 60e3).unref();
 
-if (require.main === module) {
-  server.listen(PORT, () => console.log(`MDF 2027 server on ${BASE_URL} · mail: ${mailer.provider}`));
+function start() {
+  server.listen(PORT, '0.0.0.0', () => console.log(`MDF 2027 server on port ${PORT} · public ${BASE_URL} · mail: ${mailer.provider}`));
 }
-module.exports = { server, sweep, db };
+if (require.main === module) start();
+module.exports = { server, sweep, db, start };
