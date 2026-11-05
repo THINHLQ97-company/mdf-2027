@@ -76,7 +76,7 @@
     return root.querySelector('.mdf-page.active');
   }
 
-  function modalOpen() { var m = document.getElementById('ob-modal'); return m && !m.hidden; }
+  function modalOpen() { var m = document.getElementById('ob-modal'), b = document.getElementById('bd-modal'); return (m && !m.hidden) || (b && !b.hidden); }
 
   function onWheel(e) {
     if (modalOpen()) return;
@@ -142,6 +142,7 @@
     });
 
     renderPackages();
+    renderComparison();
     renderForm();
     startCountdown();
     setActive('hero');
@@ -490,41 +491,119 @@
     root.querySelectorAll('[data-cmp]').forEach(function (x) { var on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-selected', on ? 'true' : 'false'); });
   });
 
-  /* ───────────── Benefit explanations (hover / tap) ───────────── */
+  /* ───────────── Comparison table (built from window.MDF_BENEFITS) ───────────── */
+  var TIER = ['silver', 'gold', 'diamond'];
+  function cellHtml(v) {
+    if (v[0] === 'no') return '<span class="matbao-cancel-red" aria-label="Not included"></span>';
+    var main = v[0] === 'yes' ? '<span class="matbao-check-ok" aria-label="Included"></span>' : '<b class="cv">' + esc(v[0]) + '</b>';
+    return main + (v[1] ? '<small class="cd">' + esc(v[1]) + '</small>' : '');
+  }
+  function renderComparison() {
+    var body = document.getElementById('cmp-body');
+    if (!body || !window.MDF_BENEFITS) return;
+    var h = '';
+    window.MDF_BENEFITS.forEach(function (g) {
+      h += '<tr><td colspan="4"><i class="icon-' + g.icon + '" aria-hidden="true"></i>' + esc(g.group) + '</td></tr>';
+      g.rows.forEach(function (r) {
+        h += '<tr><td class="row-title"><span class="tip-trigger" data-tip="' + r.key + '" tabindex="0" role="button" aria-haspopup="dialog" aria-label="' + esc(r.title) + ': open details">' + esc(r.title) + '</span>' +
+          (r.isNew ? ' <em class="tag-new">NEW</em>' : '') + '</td>' + TIER.map(function (k) { return '<td>' + cellHtml(r.plans[k]) + '</td>'; }).join('') + '</tr>';
+      });
+    });
+    h += '<tr><td colspan="4"><i class="icon-1" aria-hidden="true"></i>Price &amp; availability</td></tr>' +
+      '<tr class="row-price"><td class="row-title">Annual price</td>' + PACKAGES.map(function (p) { return '<td>' + money(priceOf(p)) + (isEarlyBird() ? '<small class="cd">Early bird · list ' + money(p.list) + '</small>' : '') + '</td>'; }).join('') + '</tr>' +
+      '<tr><td class="row-title">Half-year price</td>' + PACKAGES.map(function (p) { return '<td><b class="cv">' + money(p.half) + '</b><small class="cd">No Registration Guarantee</small></td>'; }).join('') + '</tr>' +
+      '<tr class="row-slots"><td class="row-title">Partner slots</td>' + PACKAGES.map(function (p) { return '<td><b class="cv">' + p.total + '</b><small class="cd">' + esc(slotText(p)) + '</small></td>'; }).join('') + '</tr>';
+    body.innerHTML = h;
+  }
+
+  /* ───────────── Benefit explanations: hover preview + click for full details ───────────── */
   var tipOpenFor = null;
   function tipBox() { return document.getElementById('mdf-tip'); }
+  function legendFor(wf) { return /^(results|vibe|searchbar|promo|banner)$/.test(wf || '') ? '<div class="legend"><i class="d">D</i>Diamond<i class="g">G</i>Gold<i class="s">S</i>Silver</div>' : ''; }
   function showTip(trigger) {
     var box = tipBox(), tip = window.MDF_TIPS && window.MDF_TIPS[trigger.getAttribute('data-tip')];
     if (!box || !tip) return;
     box.innerHTML = '<b>' + esc(tip.title) + '</b><p>' + esc(tip.body) + '</p>' + (tip.wf ? '<div class="wf">' + window.MDF_WF(tip.wf) + '</div>' : '') +
-      (tip.wf === 'results' || tip.wf === 'vibe' || tip.wf === 'searchbar' || tip.wf === 'promo' || tip.wf === 'banner' ? '<div class="legend"><i class="d">D</i>Diamond<i class="g">G</i>Gold<i class="s">S</i>Silver</div>' : '');
+      legendFor(tip.wf) + '<p class="tip-more">Click for full details →</p>';
     box.hidden = false;
     var r = trigger.getBoundingClientRect(), bw = box.offsetWidth, bh = box.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
-    var left = Math.min(Math.max(12, r.left), vw - bw - 12);
+    box.style.left = Math.min(Math.max(12, r.left), vw - bw - 12) + 'px';
     var top = r.bottom + 10;
     if (top + bh > vh - 12) top = Math.max(12, r.top - bh - 10);
-    box.style.left = left + 'px';
     box.style.top = top + 'px';
     tipOpenFor = trigger;
   }
   function hideTip() { var box = tipBox(); if (box) box.hidden = true; tipOpenFor = null; }
+
+  var bdList = [], bdIndex = 0, bdLastFocus = null;
+  function flatBenefits() { var out = []; (window.MDF_BENEFITS || []).forEach(function (g) { g.rows.forEach(function (r) { out.push(r); }); }); return out; }
+  function renderBenefit() {
+    var r = bdList[bdIndex], el = document.getElementById('bd-body');
+    var labels = { silver: 'Silver', gold: 'Gold', diamond: 'Diamond' };
+    el.innerHTML = '<div class="bd-group">' + esc(r.group) + '</div>' +
+      '<h3 id="bd-title">' + esc(r.title) + (r.isNew ? ' <em class="tag-new">NEW</em>' : '') + '</h3>' +
+      '<div class="bd-grid">' +
+        (r.wf ? '<div class="bd-fig">' + window.MDF_WF(r.wf) + legendFor(r.wf) + '</div>' : '') +
+        '<div class="bd-text"><div class="bd-sec"><span>What it is</span><p>' + esc(r.what) + '</p></div>' +
+        '<div class="bd-sec"><span>Where it appears</span><p>' + esc(r.where) + '</p></div></div>' +
+      '</div>' +
+      '<div class="bd-plans">' + TIER.map(function (k) {
+        var v = r.plans[k], off = v[0] === 'no';
+        return '<div class="bd-plan ' + k + (off ? ' off' : '') + '"><span class="nm">' + labels[k] + '</span>' +
+          '<b>' + (off ? 'Not included' : v[0] === 'yes' ? 'Included' : esc(v[0])) + '</b>' + (off ? '' : '<small>' + esc(v[1] || '') + '</small>') + '</div>';
+      }).join('') + '</div>' +
+      (r.notes && r.notes.length ? '<div class="bd-notes"><span>Notes</span><ul>' + r.notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></div>' : '');
+    document.getElementById('bd-count').textContent = (bdIndex + 1) + ' / ' + bdList.length;
+    el.scrollTop = 0;
+  }
+  function openBenefit(key) {
+    bdList = flatBenefits();
+    bdIndex = Math.max(0, bdList.map(function (r) { return r.key; }).indexOf(key));
+    if (!bdList.length) return;
+    hideTip();
+    bdLastFocus = document.activeElement;
+    renderBenefit();
+    var m = document.getElementById('bd-modal'); m.hidden = false; document.body.classList.add('ob-open');
+    m.querySelector('.bd-dialog').focus();
+  }
+  function closeBenefit() {
+    var m = document.getElementById('bd-modal'); if (!m || m.hidden) return;
+    m.hidden = true; document.body.classList.remove('ob-open');
+    if (bdLastFocus && bdLastFocus.focus) bdLastFocus.focus();
+  }
   var canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
   document.addEventListener('mouseover', function (ev) {
-    if (!canHover) return;
+    if (!canHover || modalOpen()) return;
     var tr = ev.target.closest && ev.target.closest('[data-tip]');
     if (tr) showTip(tr); else if (tipOpenFor && !(ev.target.closest && ev.target.closest('#mdf-tip'))) hideTip();
   });
-  // Touch: tap toggles. Mouse: hover shows, click keeps it open. Keyboard: Enter / Space toggles.
+  // Click / tap / Enter opens the full details pop-up.
   document.addEventListener('click', function (ev) {
     var tr = ev.target.closest && ev.target.closest('[data-tip]');
-    if (tr) { if (canHover) showTip(tr); else if (tipOpenFor === tr) hideTip(); else showTip(tr); return; }
-    if (tipOpenFor && !(ev.target.closest && ev.target.closest('#mdf-tip'))) hideTip();
+    if (tr) { openBenefit(tr.getAttribute('data-tip')); return; }
+    if (ev.target.closest && ev.target.closest('#mdf-tip') && tipOpenFor) { openBenefit(tipOpenFor.getAttribute('data-tip')); return; }
+    if (ev.target.closest && ev.target.closest('[data-bd-close]')) { closeBenefit(); return; }
+    var st = ev.target.closest && ev.target.closest('[data-bd-step]');
+    if (st) { bdIndex = (bdIndex + Number(st.getAttribute('data-bd-step')) + bdList.length) % bdList.length; renderBenefit(); return; }
+    if (tipOpenFor) hideTip();
   });
   document.addEventListener('keydown', function (ev) {
+    var m = document.getElementById('bd-modal');
+    if (m && !m.hidden) {
+      if (ev.key === 'Escape') { closeBenefit(); return; }
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') { bdIndex = (bdIndex + (ev.key === 'ArrowRight' ? 1 : -1) + bdList.length) % bdList.length; renderBenefit(); return; }
+      if (ev.key === 'Tab') {
+        var f = m.querySelectorAll('button'), first = f[0], last = f[f.length - 1];
+        if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+      }
+      return;
+    }
     if (ev.key === 'Escape') { hideTip(); return; }
     var tr = ev.target.closest && ev.target.closest('[data-tip]');
-    if (tr && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); if (tipOpenFor === tr) hideTip(); else showTip(tr); }
+    if (tr && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openBenefit(tr.getAttribute('data-tip')); }
   });
+  document.addEventListener('focusin', function (ev) { if (modalOpen()) return; var tr = ev.target.closest && ev.target.closest('[data-tip]'); if (tr && canHover) showTip(tr); });
   document.addEventListener('scroll', hideTip, true);
 
   /* ───────────── Registrar Obligation viewer ───────────── */
@@ -601,7 +680,7 @@
         var s = st.plans[p.key]; if (!s) return;
         p.list = s.list; p.half = s.half; p.total = s.total; p.slots = s.available; p.onHold = s.onHold;
       });
-      if (document.getElementById('pkg-container')) { renderPackages(); renderForm(); }
+      if (document.getElementById('pkg-container')) { renderPackages(); renderComparison(); renderForm(); }
       var wrap = root.querySelector('.title-countdown');
       if (wrap) wrap.style.display = (PROGRAM.state === 'open' && isEarlyBird()) ? '' : 'none';
     }

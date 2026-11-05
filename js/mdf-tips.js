@@ -111,7 +111,7 @@
         '<rect x="1" y="21" width="238" height="128" fill="#000" fill-opacity=".5"/>' +
         '<rect x="40" y="30" width="160" height="104" rx="6" fill="' + C.frame + '" stroke="' + C.hi + '" stroke-width="1.5"/>' +
         t(120, 44, 'Free for the first year!', 8.5, C.txt, 'middle', 700) +
-        t(120, 56, 'mybrand.cloud & mybrand.asia for 0 đ', 6.5, C.hi, 'middle') +
+        t(120, 56, 'mybrand.cloud & mybrand.asia free', 6.5, C.hi, 'middle') +
         cb(62, 'mybrand.asia', 'D') + cb(80, 'mybrand.cloud', 'D') +
         '<rect x="52" y="102" width="40" height="14" rx="4" fill="rgba(255,255,255,.25)"/>' + t(72, 111.5, 'Skip', 6.5, C.txt, 'middle') +
         '<rect x="98" y="102" width="90" height="14" rx="4" fill="#7ac943"/>' + t(143, 111.5, 'Claim & go to cart', 6.5, '#06102e', 'middle', 700) +
@@ -122,65 +122,141 @@
 
   window.MDF_WF = function (kind) { return WF[kind] ? WF[kind]() : ''; };
 
-  window.MDF_TIPS = {
-    resultsPopularity: {
-      title: 'Search Results (Popular category)',
-      body: 'After a customer searches a name, matbao.net lists other extensions below the main result. This is where your TLD ranks in the Popular category.',
-      wf: 'results'
-    },
-    resultsNational: {
-      title: 'Search Results (International gTLDs)',
-      body: 'Your TLD’s rank in the International (gTLDs) category of the search results. Diamond and Gold appear on page 1, Silver on pages 2–3.',
-      wf: 'results'
-    },
-    homepageBanner: {
-      title: 'Homepage Banner',
-      body: 'Your TLD banner in the rotating slider at the top of the matbao.net homepage. The slot is your place in the rotation: lower slots are shown sooner and more often. Diamond takes slots 1–5, Gold 3–7, Silver 5–9. Your banner stays in the slider for the whole contract term.',
-      wf: 'banner'
-    },
-    promoPage: {
-      title: 'Promo-page Presence',
-      body: 'A standard banner for your TLD on the matbao.net promotions page: positions 1st–4th for Diamond, 5th–8th for Gold, 8th–12th for Silver. Diamond also gets a slot highlighting its discounted price.',
-      wf: 'promo'
-    },
-    searchBar: {
-      title: 'TLD under the Search Bar',
-      body: 'Your TLD is shown at all times in the row of extensions under the main search bar on matbao.net. The row rotates in slides: Diamond on Slide 1, Gold on Slide 2, Silver on Slide 3.',
-      wf: 'searchbar'
-    },
-    aiSearch: {
-      title: 'AI Search Suggestion',
-      body: 'Mat Bao’s AI generates domain name ideas from what the customer types. Your TLD is used in those ideas: Standard (Silver), Priority (Gold) or Top (Diamond).',
-      wf: 'ai'
-    },
-    vibe: {
-      title: 'Vibe Hosting Domain Suggestion',
-      body: 'Vibe Hosting lets users build and deploy apps with AI. Right after an app goes live, we ask them to add a custom domain. There are 4 suggestions: Diamond is the top pick and is pre-selected, .COM stays second, and the 3 Gold partners rotate through the last 2 spots.',
-      wf: 'vibe'
-    },
-    bundlePlacement: {
-      title: 'Bundle Placement',
-      body: 'Gold: your TLD sits inside a combo card (“Suggested for you”) on the search results page, sold together with .COM / .NET / .VN at a first-year combo price. Diamond: when the customer clicks “Go to cart”, a pop-up offers the searched name with your TLD free for the first year. Both Diamond TLDs appear together, each with its own tick box, and every ticked domain is added to the cart.',
-      wf: 'combo'
-    },
-    bundleExposure: {
-      title: 'Bundle Exposure',
-      body: 'matbao.net has 2 combo cards and 1 cart pop-up, so bundles are capped at 5 partners. The 3 Gold partners rotate through the 2 combo cards, so each Gold appears in about 2 of every 3 searches that show combos. Both Diamond partners appear together in the cart pop-up at every checkout, with the order switching between customers so neither always comes first.',
-      wf: 'cartpopup'
-    },
-    bundleOffer: {
-      title: 'Customer Offer',
-      body: 'What the customer sees. Gold: a discounted first-year combo price. Diamond: your TLD at 0 đ for the first year when checking out. The offer is funded by your registry promo pricing, and quantities are agreed with you before launch.',
-      wf: 'cartpopup'
-    },
-    bundleFunding: { title: 'Offer Funding', body: 'The combo discount and the free first year are funded by your registry promo pricing. Mat Bao provides the placement and the checkout flow. You only fund domains that customers actually register through the offer.' },
-    campaignGoal: { title: 'Campaign Goal', body: 'The objective we optimise your boosted ads for: Reach & Impressions (Silver) or Traffic & Engagement (Gold, Diamond).' },
-    alwaysOnAds: { title: 'Always-on Boosted Ads', body: 'Paid ads on Facebook and Google that run all year. Silver shares one carousel ad with other partners. Gold and Diamond get their own campaign. No organic posts are included.' },
-    highlightBoost: { title: 'Highlight Boost Campaigns', body: 'Short, high-budget bursts around your key moments (launches, price promotions). 3 per year for Gold, 6 for Diamond.' },
-    reporting: { title: 'Campaign Reporting', body: 'How you receive results: in the general partner report (Silver) or a dedicated quarterly report (Gold, Diamond).' },
-    guaranteeMin: { title: 'Guaranteed Minimum New Registrations', body: 'A committed floor of new registrations for your TLD over the 12-month term, agreed before signing. See the Guarantee section for how it works.' },
-    guaranteeCredit: { title: 'Shortfall Credit', body: 'If we miss the floor, the shortfall becomes credit toward your MDF 2028 package, up to 50% of the package fee. Not cash, not transferable.' },
-    merchItems: { title: 'Co-brand Items', body: 'Merchandise produced with Mat Bao and your TLD branding, handed out at industry events through the year.' },
-    merchOwn: { title: 'Registry’s Own Merchandise Distribution', body: 'We bring and distribute your own merchandise at the events we attend.' }
-  };
+  /* One source for the comparison table AND the benefit pop-ups.
+     Each row: key, title, isNew, plans {silver, gold, diamond: [value, detail]}, what, where, notes[], wf (schematic).
+     Values 'yes' / 'no' render as tick / cross. Keep in sync with js/mdf-obligation.js. */
+  var NO = ['no', 'Not included'];
+  window.MDF_BENEFITS = [
+    { group: 'Visibility on matbao.net', icon: 1, rows: [
+      { key: 'homepageBanner', title: 'Homepage Banner', wf: 'banner',
+        plans: { silver: ['Slot 5–9', 'In the homepage slider all term'], gold: ['Slot 3–7', 'In the homepage slider all term'], diamond: ['Slot 1–5', 'Leading slots of the slider'] },
+        what: 'A banner for your TLD in the rotating slider at the top of the matbao.net homepage.',
+        where: 'matbao.net homepage, top slider, on desktop and mobile.',
+        notes: ['The slot is your position in the rotation: lower numbers are shown earlier and more often.', 'Your banner stays in the slider for the whole 12-month term.', 'Banner sizes are shared after signing so your team can supply artwork.'] },
+      { key: 'searchBar', title: 'TLD under the Search Bar', wf: 'searchbar',
+        plans: { silver: ['Slide 3', 'Shown at all times'], gold: ['Slide 2', 'Shown at all times'], diamond: ['Slide 1', 'First slide, shown at all times'] },
+        what: 'Your TLD is listed in the row of extensions directly under the main domain search bar.',
+        where: 'matbao.net homepage and domain pages, under the search bar.',
+        notes: ['The extension row rotates in slides. Slide 1 is shown first when the page loads.'] },
+      { key: 'resultsPopularity', title: 'Search Results (Popular)', wf: 'results',
+        plans: { silver: ['Page 2–3', 'Popular category'], gold: ['Page 1–2', 'Popular category'], diamond: ['Page 1', 'Popular category'] },
+        what: 'After a customer searches a name, matbao.net lists other available extensions. This is your rank in the Popular category.',
+        where: 'Domain search results page, Popular category.',
+        notes: ['Ranking applies to the default view customers see after searching.'] },
+      { key: 'resultsNational', title: 'Search Results (International gTLDs)', wf: 'results',
+        plans: { silver: ['Page 2–3', 'International (gTLDs) category'], gold: ['Page 1', 'International (gTLDs) category'], diamond: ['Page 1', 'International (gTLDs) category'] },
+        what: 'Your rank in the International (gTLDs) category of the search results.',
+        where: 'Domain search results page, International (gTLDs) category.',
+        notes: [] },
+      { key: 'promoPage', title: 'Promo-page Banner', wf: 'promo',
+        plans: { silver: ['Banner 8th–12th', 'Standard banner'], gold: ['Banner 5th–8th', 'Standard banner'], diamond: ['Banner 1st–4th', 'Leading positions'] },
+        what: 'A standard banner for your TLD on the matbao.net domain promotions page.',
+        where: 'matbao.net promotions page.',
+        notes: ['Position order is fixed for the term and follows your plan tier.'] },
+      { key: 'promoPrice', title: 'Promo-page Price Highlight', isNew: true, wf: 'promo',
+        plans: { silver: NO, gold: NO, diamond: ['yes', '1 slot featuring your discounted price'] },
+        what: 'A dedicated slot on the promotions page that shows your TLD with its current discounted price.',
+        where: 'matbao.net promotions page, price highlight area.',
+        notes: ['The price shown is your registry promotional price for the period.'] }
+    ] },
+    { group: 'Smart Search & Vibe Hosting', icon: 2, rows: [
+      { key: 'aiSearch', title: 'AI Search Suggestion', wf: 'ai',
+        plans: { silver: ['Standard', 'Included in AI name ideas'], gold: ['Priority', 'Suggested ahead of standard TLDs'], diamond: ['Top', 'First in AI name ideas'] },
+        what: 'Mat Bao’s AI generates domain name ideas from what the customer types. Your TLD is used in those ideas.',
+        where: 'matbao.net domain search, AI suggestions block.',
+        notes: ['Suggestions are only shown when the matching domain is available.'] },
+      { key: 'vibe', title: 'Vibe Hosting Domain Suggestion', isNew: true, wf: 'vibe',
+        plans: { silver: NO, gold: ['Listed', 'Rotates through 2 of the 4 suggestions'], diamond: ['Top pick', 'Pre-selected, first of 4 suggestions'] },
+        what: 'Vibe Hosting lets users build and deploy apps with AI. Right after an app goes live, the user is asked to add a custom domain.',
+        where: 'Vibe Hosting, “Add a custom domain” step after deployment.',
+        notes: ['There are 4 suggestions: Diamond first (pre-selected), .COM second, Gold partners rotate through the last 2.', 'Limited to the partners in Gold and Diamond.'] }
+    ] },
+    { group: 'Bundle (max. 5 partners)', icon: 3, rows: [
+      { key: 'bundlePlacement', title: 'Bundle Placement', isNew: true, wf: 'combo',
+        plans: { silver: NO, gold: ['Combo card', 'In search results, next to .COM / .NET / .VN'], diamond: ['Cart pop-up', 'Shown when the customer goes to the cart'] },
+        what: 'Your TLD is offered together with the popular domain the customer is buying.',
+        where: 'Gold: “Suggested for you” combo cards on the search results page. Diamond: pop-up after “Go to cart”.',
+        notes: ['Diamond: each offered domain has its own tick box and is added to the cart only when ticked.'] },
+      { key: 'bundleTrigger', title: 'Triggering Domains', isNew: true, wf: 'cartpopup',
+        plans: { silver: NO, gold: ['.COM · .NET · .VN', 'Combo with these extensions'], diamond: ['5 extensions', '.com · .net · .vn · .com.vn · .net.vn'] },
+        what: 'The new domain registrations that trigger your bundle offer.',
+        where: 'Search results (Gold) and cart (Diamond).',
+        notes: ['The offered name exactly matches the name the customer is registering (e.g. mybrand.com → mybrand.yourtld).'] },
+      { key: 'bundleExposure', title: 'Bundle Exposure', isNew: true, wf: 'cartpopup',
+        plans: { silver: NO, gold: ['~2 of 3 searches', '2 combo cards rotate among 3 Gold'], diamond: ['100% of checkouts', 'Shared with max. 1 other Diamond'] },
+        what: 'How often your bundle offer is shown.',
+        where: 'Search results (Gold) and cart (Diamond).',
+        notes: ['matbao.net has 2 combo cards and 1 cart pop-up, so bundles are capped at 5 partners.', 'Diamond: the order of the two TLDs alternates between customers so neither always comes first.'] },
+      { key: 'bundleOffer', title: 'Customer Offer', isNew: true, wf: 'cartpopup',
+        plans: { silver: NO, gold: ['Combo price', 'Discounted first year'], diamond: ['Free first year', 'For the matching domain'] },
+        what: 'What the customer sees and gets.',
+        where: 'Combo card (Gold) and cart pop-up (Diamond).',
+        notes: ['Renewal from year 2 is at the standard price.', 'The number of offers is agreed with you before launch.'] },
+      { key: 'bundleFunding', title: 'Offer Funding', wf: 'cartpopup',
+        plans: { silver: NO, gold: ['Registry promo price', 'You fund only redeemed domains'], diamond: ['Registry promo price', 'You fund only redeemed domains'] },
+        what: 'The combo discount and the free first year are funded by your registry promotional pricing.',
+        where: 'Agreed in the contract.',
+        notes: ['Mat Bao provides the placement and the checkout flow.', 'You only fund domains that customers actually register through the offer.'] }
+    ] },
+    { group: 'Boosted Ads (Facebook & Google)', icon: 4, rows: [
+      { key: 'adPlatforms', title: 'Ad Platforms', isNew: true,
+        plans: { silver: ['Facebook · Google', 'Paid, boosted ads'], gold: ['Facebook · Google', 'Paid, boosted ads'], diamond: ['Facebook · Google', 'Paid, boosted ads'] },
+        what: 'All MDF 2027 advertising is paid, boosted ads on Facebook and Google.',
+        where: 'Facebook and Google ad networks, targeting Vietnam.',
+        notes: ['No organic social posts are included in MDF 2027.'] },
+      { key: 'campaignGoal', title: 'Campaign Goal',
+        plans: { silver: ['Reach', 'Reach & impressions'], gold: ['Traffic', 'Traffic & engagement'], diamond: ['Traffic', 'Traffic & engagement'] },
+        what: 'The objective your boosted ads are optimised for.',
+        where: 'Facebook and Google campaign settings.',
+        notes: [] },
+      { key: 'alwaysOnAds', title: 'Always-on Boosted Ads',
+        plans: { silver: ['Shared', 'One carousel with other partners'], gold: ['Separate', 'Your own campaign'], diamond: ['Separate', 'Your own campaign'] },
+        what: 'Ads that run throughout the term to keep your TLD visible.',
+        where: 'Facebook and Google.',
+        notes: [] },
+      { key: 'highlightBoost', title: 'Highlight Boost Campaigns',
+        plans: { silver: NO, gold: ['3 campaigns', 'During the term'], diamond: ['6 campaigns', 'During the term'] },
+        what: 'Short, higher-budget bursts around your key moments, such as a launch or a price promotion.',
+        where: 'Facebook and Google.',
+        notes: ['Timing is planned with you at the start of each quarter.'] },
+      { key: 'reporting', title: 'Campaign Reporting',
+        plans: { silver: ['General report', 'Shared partner report'], gold: ['Quarterly', 'Dedicated quarterly report'], diamond: ['Quarterly', 'Dedicated quarterly report'] },
+        what: 'How you receive campaign results.',
+        where: 'Sent by email to your contact.',
+        notes: [] }
+    ] },
+    { group: 'Registration Guarantee', icon: 5, rows: [
+      { key: 'guaranteeMin', title: 'Guaranteed Minimum New Registrations', isNew: true,
+        plans: { silver: NO, gold: NO, diamond: ['yes', 'Floor agreed before signing'] },
+        what: 'A committed minimum number of new registrations of your TLD at Mat Bao over the 12-month term.',
+        where: 'Set in the contract, based on your 2026 performance at Mat Bao and 2027 retail price.',
+        notes: ['All new registrations count: search, AI suggestions, Vibe Hosting, bundles and boosted ads.', 'Renewals and transfers do not count.'] },
+      { key: 'guaranteeCredit', title: 'Shortfall Credit toward MDF 2028', isNew: true,
+        plans: { silver: NO, gold: NO, diamond: ['Up to 50%', 'Of the package fee'] },
+        what: 'If the floor is not reached, the shortfall becomes credit toward your MDF 2028 package.',
+        where: 'Settled at the end of the term.',
+        notes: ['Credit = Package fee × (Guaranteed − Actual) ÷ Guaranteed, capped at 50% of the package fee.', 'Credit is not cash and cannot be transferred.'] },
+      { key: 'guaranteeTerms', title: 'Guarantee Eligibility', isNew: true,
+        plans: { silver: NO, gold: NO, diamond: ['Annual plan', 'Not for half-year billing'] },
+        what: 'Conditions for the Registration Guarantee.',
+        where: 'Contract terms.',
+        notes: ['Your TLD stays available for registration through the term.', 'No wholesale price increase during the term.', 'Brand assets are delivered on time.'] }
+    ] },
+    { group: 'Event Merchandise Package', icon: 6, rows: [
+      { key: 'merchItems', title: 'Co-brand Items',
+        plans: { silver: NO, gold: ['150 items', 'Mat Bao × your TLD'], diamond: ['300 items', 'Mat Bao × your TLD'] },
+        what: 'Merchandise produced with Mat Bao and your TLD branding.',
+        where: 'Handed out at industry events Mat Bao attends.',
+        notes: ['Item types are agreed with you; artwork follows both brand guidelines.'] },
+      { key: 'merchOwn', title: 'Registry’s Own Merchandise Distribution',
+        plans: { silver: ['Up to 3 events', 'Your items, our booth'], gold: ['Up to 6 events', 'Your items, our booth'], diamond: ['Up to 10 events', 'Your items, our booth'] },
+        what: 'We bring and hand out your own merchandise at the events we attend.',
+        where: 'About 10 major industry events per year.',
+        notes: ['Shipping of your items to Mat Bao is arranged by the registry.'] }
+    ] }
+  ];
+
+  // Flat lookup used by the hover preview.
+  window.MDF_TIPS = {};
+  window.MDF_BENEFITS.forEach(function (g) { g.rows.forEach(function (r) { r.group = g.group; window.MDF_TIPS[r.key] = { title: r.title, body: r.what, wf: r.wf }; }); });
 })();

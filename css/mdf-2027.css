@@ -678,3 +678,65 @@ body.ob-open { overflow: hidden; }
 .t-mdf-program .bk-tick.mail { font-size: 24px; background: linear-gradient(135deg, #22D3EE, #4F6BFF); color: #fff; }
 .t-mdf-program .bk-small { font-size: 12px !important; color: rgba(255,255,255,.65) !important; margin-bottom: 14px !important; }
 .t-mdf-program .packages .group .item { padding-bottom: 104px; }
+
+/* =========== Comparison: value + detail per cell =========== */
+.t-mdf-program .border-table table td .cv { display: block; font-weight: 600; color: #fff; }
+.t-mdf-program .border-table table td .cd { display: block; margin-top: 3px; font-size: 12px; line-height: 16px; font-weight: 400; color: rgba(255,255,255,.62); }
+.t-mdf-program .border-table table td .matbao-check-ok + .cd { margin-top: 6px; }
+.t-mdf-program .border-table tr.row-price td .cd { font-size: 11px; color: rgba(255,255,255,.55); font-weight: 400; }
+.t-mdf-program .mdf-tip .tip-more { margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--mdf-cyan); }
+.t-mdf-program .mdf-tip { cursor: pointer; }
+
+/* =========== Benefit details pop-up =========== */
+.t-mdf-program .bd-modal { position: fixed; inset: 0; z-index: 420; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.t-mdf-program .bd-modal[hidden] { display: none; }
+.t-mdf-program .bd-backdrop { position: absolute; inset: 0; background: rgba(2, 4, 16, .72); backdrop-filter: blur(6px); }
+.t-mdf-program .bd-dialog {
+  position: relative; width: 860px; max-width: 100%; max-height: calc(100vh - 48px); display: flex; flex-direction: column;
+  border-radius: 18px; overflow: hidden; outline: none; color: #fff; font-family: Poppins, Inter, sans-serif;
+  background: linear-gradient(160deg, rgba(14, 22, 72, .98), rgba(10, 14, 48, .98));
+  border: 1px solid rgba(127, 231, 255, .35); box-shadow: 0 30px 90px rgba(0, 0, 0, .6), 0 0 40px rgba(34, 211, 238, .12);
+}
+.t-mdf-program .bd-x { position: absolute; top: 14px; right: 14px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.t-mdf-program .bd-x:hover { background: rgba(255,255,255,.22); }
+.t-mdf-program .bd-body { overflow-y: auto; overscroll-behavior: contain; padding: 28px 30px 20px; }
+.t-mdf-program .bd-group { font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--mdf-cyan); }
+.t-mdf-program .bd-body h3 { margin: 6px 44px 18px 0; font-size: 26px; line-height: 34px; font-weight: 700; text-wrap: balance; }
+.t-mdf-program .bd-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.t-mdf-program .bd-fig { border-radius: 12px; background: rgba(3, 6, 24, .45); padding: 12px; border: 1px solid rgba(255,255,255,.08); }
+.t-mdf-program .bd-fig svg { display: block; width: 100%; height: auto; }
+.t-mdf-program .bd-fig .legend { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: rgba(255,255,255,.7); }
+.t-mdf-program .bd-fig .legend i { width: 14px; height: 14px; border-radius: 50%; font: 700 8px/14px Poppins, Inter, sans-serif; font-style: normal; text-align: center; color: #06102e; margin-left: 6px; }
+.t-mdf-program .bd-fig .legend i:first-child { margin-left: 0; }
+.t-mdf-program .bd-fig .legend i.d { background: #22D3EE; } .t-mdf-program .bd-fig .legend i.g { background: #FFE770; } .t-mdf-program .bd-fig .legend i.s { background: #d6d6d6; }
+.t-mdf-program .bd-sec + .bd-sec { margin-top: 16px; }
+.t-mdf-program .bd-sec span, .t-mdf-program .bd-notes span { display: block; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,.6); margin-bottom: 4px; }
+.t-mdf-program .bd-sec p { margin: 0; font-size: 15px; line-height: 24px; color: rgba(255,255,255,.9); }
+.t-mdf-program .bd-plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.t-mdf-program .bd-plan { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.t-mdf-program .bd-plan .nm { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.t-mdf-program .bd-plan.silver .nm { color: #e3e7f0; } .t-mdf-program .bd-plan.gold .nm { color: #FFE770; } .t-mdf-program .bd-plan.diamond .nm { color: #ADD2F4; }
+.t-mdf-program .bd-plan.gold { border-color: rgba(255,231,112,.35); } .t-mdf-program .bd-plan.diamond { border-color: rgba(127,231,255,.4); }
+.t-mdf-program .bd-plan b { font-size: 17px; line-height: 23px; }
+.t-mdf-program .bd-plan small { font-size: 13px; line-height: 19px; color: rgba(255,255,255,.7); }
+.t-mdf-program .bd-plan.off { opacity: .5; } .t-mdf-program .bd-plan.off b { font-size: 14px; font-weight: 500; }
+.t-mdf-program .bd-notes { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: rgba(34, 211, 238, .08); border: 1px solid rgba(127,231,255,.25); }
+.t-mdf-program .bd-notes ul { margin: 0; padding-left: 18px; list-style: disc; }
+.t-mdf-program .bd-notes li { font-size: 14px; line-height: 21px; color: rgba(255,255,255,.88); }
+.t-mdf-program .bd-notes li + li { margin-top: 4px; }
+.t-mdf-program .bd-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 20px; border-top: 1px solid rgba(255,255,255,.1); background: rgba(3, 6, 24, .4); }
+.t-mdf-program .bd-btn { padding: 9px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); background: transparent; color: #fff; font: 600 13px/18px Poppins, Inter, sans-serif; cursor: pointer; }
+.t-mdf-program .bd-btn:hover { border-color: #fff; }
+.t-mdf-program .bd-count { font-size: 12px; color: rgba(255,255,255,.6); font-variant-numeric: tabular-nums; }
+.t-mdf-program .bd-x:focus-visible, .t-mdf-program .bd-btn:focus-visible { outline: 2px solid var(--mdf-cyan); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .t-mdf-program .bd-modal { padding: 0; align-items: flex-end; }
+  .t-mdf-program .bd-dialog { max-height: 92vh; border-radius: 18px 18px 0 0; }
+  .t-mdf-program .bd-body { padding: 22px 18px 16px; }
+  .t-mdf-program .bd-body h3 { font-size: 21px; line-height: 28px; }
+  .t-mdf-program .bd-grid { grid-template-columns: 1fr; gap: 16px; }
+  .t-mdf-program .bd-plans { grid-template-columns: 1fr; gap: 8px; }
+  .t-mdf-program .bd-plan { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+  .t-mdf-program .bd-plan .nm { width: 64px; }
+  .t-mdf-program .bd-plan small { flex-basis: 100%; padding-left: 74px; }
+}
