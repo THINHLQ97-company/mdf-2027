@@ -159,6 +159,31 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 .plans-edit td { padding: 5px 4px; border: 0; }
 .plans-edit input { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; border: 1px solid var(--line); border-radius: 6px; text-align: right; font-variant-numeric: tabular-nums; }
 .hint { font-size: 12px; color: var(--mute); }
+/* Outreach schedule */
+.waves { display: grid; gap: 10px; margin-bottom: 22px; }
+.wave { display: grid; grid-template-columns: 104px minmax(0, 1fr) auto; gap: 16px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.wave.due { border-left-color: var(--accent); background: #f7f9ff; }
+.wave.overdue { border-left-color: var(--bad); }
+.wave.done { opacity: .7; border-left-color: var(--ok); }
+.wave.skipped { opacity: .55; }
+.wave .when b { display: block; font: 700 18px/24px var(--f-display); color: var(--brand); }
+.wave .when span { display: block; font-size: 12px; color: var(--mute); }
+.wave .when input { margin-top: 6px; width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; }
+.wave h3 { margin: 0 0 2px; font: 600 15px/22px var(--f-display); }
+.wave .who { font-size: 13px; color: var(--mute); margin-bottom: 4px; }
+.wave p { margin: 0 0 6px; font-size: 14px; color: var(--ink); }
+.wave .warnline { font-size: 13px; color: var(--warn); }
+.wave .note { width: 100%; margin-top: 6px; padding: 6px 8px; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; resize: vertical; min-height: 32px; }
+.wave .acts { display: grid; gap: 6px; justify-items: stretch; min-width: 170px; }
+.wave .acts select { padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: #fff; }
+.tzline { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 16px; font-size: 13px; color: var(--mute); }
+.tzline span { background: var(--dim-bg); border-radius: 99px; padding: 3px 10px; }
+.today-mark { font-size: 12px; font-weight: 700; color: var(--accent); }
+.pv-frame { width: 100%; height: calc(100vh - 150px); border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.rep-frame { width: 100%; height: calc(100vh - 140px); border: 1px solid var(--line); border-radius: 12px; background: #070b29; }
+.drawer.wide { width: min(860px, 100%); }
+.who-list { font-size: 13px; line-height: 1.5; }
+@media (max-width: 760px) { .wave { grid-template-columns: 1fr; } .wave .acts { min-width: 0; } }
 
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--brand); color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 30; font-size: 14px; }
 .toast.bad { background: var(--bad); }
@@ -246,6 +271,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     <button class="tab on" data-tab="overview">Tổng quan</button>
     <button class="tab" data-tab="regs">Đăng ký <span class="count hidden" id="todo-count"></span></button>
     <button class="tab" data-tab="finance">MDF theo đối tác</button>
+    <button class="tab" data-tab="outreach">Lịch gửi email <span class="count hidden" id="wave-count"></span></button>
+    <button class="tab" data-tab="reports">Báo cáo 2026</button>
     <button class="tab" data-tab="settings">Cài đặt chương trình</button>
     <button class="tab" data-tab="mail">Email đã gửi</button>
     <button class="tab" data-tab="audit">Nhật ký</button>
@@ -407,6 +434,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       $('#me').textContent = 'Đang đăng nhập: ' + d.me;
       var todo = d.registrations.filter(function (r) { return r.status === 'on_hold'; }).length;
       $('#todo-count').textContent = todo; $('#todo-count').classList.toggle('hidden', !todo);
+      var dueW = d.outreach ? d.outreach.waves.filter(function (w) { return w.status === 'todo' && w.due; }).length : 0;
+      $('#wave-count').textContent = dueW; $('#wave-count').classList.toggle('hidden', !dueW);
       render();
       var m = location.hash.match(/^#reg-([\w-]+)/); if (m) { openReg(m[1]); history.replaceState(null, '', location.pathname); }
     });
@@ -418,7 +447,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 
   function render() {
     var c = $('#content');
-    c.innerHTML = ({ overview: vOverview, regs: vRegs, finance: vFinance, settings: vSettings, mail: vMail, audit: vAudit })[tab]();
+    c.innerHTML = ({ overview: vOverview, regs: vRegs, finance: vFinance, outreach: vOutreach, reports: vReports, settings: vSettings, mail: vMail, audit: vAudit })[tab]();
     bind(c);
   }
 
@@ -450,11 +479,95 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       return '<div class="plan-row"><span class="plan-name ' + k + '">' + k.toUpperCase() + '</span><div class="slots">' + cells + '</div>' +
         '<span class="plan-meta"><b>' + p.available + '</b> trống · ' + p.onHold + ' giữ · ' + p.confirmed + ' xác nhận' + (p.waitlist ? ' · ' + p.waitlist + ' chờ' : '') + '</span></div>';
     }).join('') + '<div class="legend"><span><i style="background:var(--ok)"></i>Đã xác nhận</span><span><i style="background:#ffcf4d"></i>Đang giữ chỗ</span><span><i style="background:var(--dim-bg);border:1px dashed #cdd3e3"></i>Còn trống</span></div></section>';
+    var nw = nextWave();
+    if (nw) h = h.replace('</div><div class="grid2">', '</div><div class="banner ' + (nw.date <= D.outreach.today ? 'warn' : 'info') + '" style="cursor:pointer" data-goto-tab="outreach">📨 Email tiếp theo: <b>' + esc(nw.title) + '</b> · ' + dayVN(nw.date) + ' · ' + esc(nw.who) + (nw.overdue ? ' · <b>quá hạn</b>' : '') + '</div><div class="grid2">');
     h += '<section class="panel"><h2>Cần xử lý</h2><div class="todo">' +
       (holds.length ? holds.map(todoItem).join('') : '<div class="empty">Không có đăng ký nào đang chờ xác nhận.</div>') +
       (wl.length ? '<h2 style="margin-top:12px">Danh sách chờ</h2>' + wl.map(todoItem).join('') : '') + '</div></section></div>';
     return h;
   }
+  /* ── outreach: send schedule + contacts ── */
+  var WSTATUS = { todo: 'Chưa gửi', done: 'Đã gửi', skipped: 'Bỏ qua' };
+  var TZN = { asia: 'Châu Á', europe: 'Châu Âu', americas: 'Châu Mỹ' };
+  function dayVN(d) { var x = new Date(d + 'T00:00:00Z'); return ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][x.getUTCDay()] + ', ' + d.slice(8, 10) + '/' + d.slice(5, 7); }
+  function nextWave() { var o = D.outreach; return o && o.waves.filter(function (w) { return w.status === 'todo'; })[0]; }
+  function vOutreach() {
+    var o = D.outreach, t = o.today;
+    var h = '<div class="head"><h1>Lịch gửi email cho registry</h1><span class="sub">Hôm nay ' + dayVN(t) + '</span><div class="right"><button class="btn" data-act="contact-new">+ Thêm liên hệ</button><label class="btn" style="cursor:pointer">Nhập file<input type="file" accept="application/json,.json" id="imp-file" hidden></label></div></div>';
+    h += '<div class="tzline">Giờ gửi (giờ VN): ' + Object.keys(o.tz).map(function (k) { return '<span>' + esc(TZN[k]) + ' ' + esc(o.tz[k].time) + '</span>'; }).join('') + '<span>Outlook: Options → Delay Delivery</span></div>';
+    if (!o.contacts.length) h += '<div class="banner warn">Chưa có danh sách liên hệ. Bấm <b>Nhập file</b> và chọn <b>mdf2027-dashboard-import.json</b> (danh sách registry + báo cáo 2026).</div>';
+    h += '<div class="waves">' + o.waves.map(function (w) {
+      var cls = w.status !== 'todo' ? w.status : (w.overdue ? 'overdue' : (w.due ? 'due' : ''));
+      return '<div class="wave ' + cls + '" data-wave="' + w.key + '"><div class="when"><b>' + dayVN(w.date) + '</b><span>' + w.date.slice(0, 4) + (w.custom ? ' · đã chỉnh' : ' · tự tính') + '</span>' +
+        (w.date === t && w.status === 'todo' ? '<span class="today-mark">HÔM NAY</span>' : '') + (w.overdue ? '<span class="today-mark" style="color:var(--bad)">QUÁ HẠN</span>' : '') +
+        '<input type="date" value="' + w.date + '" data-wdate aria-label="Đổi ngày gửi">' + (w.custom ? '<button class="linkbtn" style="font-size:12px" data-wreset>Về ngày tự tính (' + dayVN(w.autoDate) + ')</button>' : '') + '</div>' +
+        '<div><h3>' + esc(w.title) + '</h3><div class="who">' + esc(w.who) + (w.template || w.key === 'followup' ? ' · <b>' + w.recipients + '</b> registry' : '') + '</div><p>' + esc(w.desc) + '</p>' +
+        (w.missingTo.length ? '<div class="warnline">⚠ Chưa có email người nhận: ' + esc(w.missingTo.join(', ')) + '</div>' : '') +
+        (w.status !== 'todo' && w.doneAt ? '<div class="hint">' + esc(WSTATUS[w.status]) + ' · ' + dt(w.doneAt) + (w.doneBy ? ' · ' + esc(w.doneBy) : '') + '</div>' : '') +
+        '<textarea class="note" data-wnote placeholder="Ghi chú">' + esc(w.note) + '</textarea></div>' +
+        '<div class="acts"><select data-wstatus aria-label="Trạng thái">' + ['todo', 'done', 'skipped'].map(function (s) { return '<option value="' + s + '"' + (w.status === s ? ' selected' : '') + '>' + WSTATUS[s] + '</option>'; }).join('') + '</select>' +
+        (w.template ? (w.recipients ? '<a class="btn primary" style="text-align:center;text-decoration:none" href="/admin/api/outreach/download?wave=' + w.key + '">Tải email (.msg)</a>' : '<button class="btn primary" disabled title="Chưa có registry nào trong đợt này">Tải email (.msg)</button>') + '<button class="btn" data-wpreview' + (w.recipients ? '' : ' disabled') + '>Xem trước</button>' : '') + '</div></div>';
+    }).join('') + '</div>';
+    h += '<section class="panel"><h2>Danh sách registry (' + o.contacts.length + ')</h2><div class="table-wrap" style="border:0"><table><thead><tr><th>Registry</th><th>Nhóm</th><th>Múi giờ</th><th>Người nhận</th><th>Gói đề xuất</th><th>MDF 2027</th><th></th></tr></thead><tbody>' +
+      (o.contacts.length ? o.contacts.map(function (c) {
+        return '<tr><td><b>' + esc(c.name) + '</b><span class="s">' + esc(c.tlds.join(', ')) + (c.hasPdf ? ' · có PDF báo cáo' : '') + '</span></td><td>' + (c.group === 'partner' ? 'Đối tác 2026' : 'Registry mới') + '</td><td>' + esc(TZN[c.tz]) + '</td>' +
+          '<td class="who-list">' + (c.to.length ? c.to.map(function (x) { return esc(x.email); }).join('<br>') : '<span class="pill st-rejected">Chưa có</span>') + (c.cc.length ? '<span class="s">CC: ' + esc(c.cc.map(function (x) { return x.email; }).join(', ')) + '</span>' : '') + '</td>' +
+          '<td>' + (c.plan ? '<span class="plan-name ' + c.plan + '">' + c.plan.toUpperCase() + '</span>' : '–') + '</td>' +
+          '<td>' + (c.registered.length ? c.registered.map(function (r) { return '<span class="pill st-confirmed">' + esc(r.tld) + ' ' + esc(r.plan.toUpperCase()) + '</span>'; }).join(' ') : '<span class="hint">Chưa đăng ký</span>') + '</td>' +
+          '<td><button class="btn" data-cedit="' + c.id + '">Sửa</button></td></tr>';
+      }).join('') : '<tr><td colspan="7" class="empty">Chưa có liên hệ.</td></tr>') + '</tbody></table></div><p class="hint">Danh sách này chỉ lưu trên máy chủ, không nằm trong mã nguồn. Registry được tính là đã đăng ký khi có đăng ký đang giữ chỗ, đã xác nhận hoặc trong danh sách chờ với cùng TLD hoặc cùng tên miền email.</p></section>';
+    return h;
+  }
+  function openContact(id) {
+    var c = D.outreach.contacts.filter(function (x) { return x.id === id; })[0] || { name: '', label: '', tlds: [], group: 'new', tz: 'asia', greet: '', to: [], cc: [], plan: '', results: [], why: '' };
+    var ppl = function (l) { return l.map(function (x) { return (x.name ? x.name + ' <' + x.email + '>' : x.email); }).join('\n'); };
+    var h = '<div class="drawer-bg" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" tabindex="-1"><button class="x" data-close aria-label="Đóng">×</button>' +
+      '<h2 id="dr-title">' + (c.id ? esc(c.name) : 'Thêm registry') + '</h2><form id="ct-form" style="display:grid;gap:12px;margin-top:14px">' +
+      '<label class="f">Tên hiển thị<input class="i" name="name" value="' + esc(c.name) + '" required></label>' +
+      '<div class="row2"><label class="f">Nhãn trong email (vd .XYZ)<input class="i" name="label" value="' + esc(c.label) + '"></label><label class="f">TLD (cách nhau dấu phẩy)<input class="i" name="tlds" value="' + esc(c.tlds.join(', ')) + '"></label></div>' +
+      '<label class="f">Lời chào<input class="i" name="greet" value="' + esc(c.greet) + '" placeholder="Dear Charles and the XYZ team,"></label>' +
+      '<label class="f">To (mỗi dòng một người: Tên &lt;email&gt;)<textarea class="i" name="to" rows="2">' + esc(ppl(c.to)) + '</textarea></label>' +
+      '<label class="f">CC<textarea class="i" name="cc" rows="2">' + esc(ppl(c.cc)) + '</textarea></label>' +
+      '<div class="row2"><label class="f">Nhóm<select class="i" name="group"><option value="partner"' + (c.group === 'partner' ? ' selected' : '') + '>Đối tác 2026</option><option value="new"' + (c.group === 'new' ? ' selected' : '') + '>Registry mới</option></select></label>' +
+      '<label class="f">Múi giờ<select class="i" name="tz">' + Object.keys(TZN).map(function (k) { return '<option value="' + k + '"' + (c.tz === k ? ' selected' : '') + '>' + TZN[k] + '</option>'; }).join('') + '</select></label></div>' +
+      '<label class="f">Gói đề xuất<select class="i" name="plan"><option value="">Không</option>' + PLANS.map(function (k) { return '<option value="' + k + '"' + (c.plan === k ? ' selected' : '') + '>' + k.toUpperCase() + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">Lý do đề xuất (trong Package Offer)<textarea class="i" name="why" rows="3">' + esc(c.why) + '</textarea></label>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Lưu</button>' + (c.id ? '<button class="btn bad" type="button" data-cdel>Xoá</button>' : '') + '</div></form></aside>';
+    var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
+    root.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
+    var parse = function (v) { return v.split('\n').map(function (l) { var m = l.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/); return m ? { name: m[1], email: m[2] } : { name: '', email: l.trim() }; }).filter(function (x) { return x.email; }); };
+    root.querySelector('#ct-form').addEventListener('submit', function (e) {
+      e.preventDefault(); var f = e.target;
+      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value })
+        .then(function () { closeDrawer(); toast('Đã lưu'); load(); }).catch(function (er) { toast(er.message, true); });
+    });
+    var del = root.querySelector('[data-cdel]');
+    if (del) del.addEventListener('click', function () { if (confirm('Xoá ' + c.name + '?')) api('outreach/contact', { id: c.id, remove: true }).then(function () { closeDrawer(); load(); }); });
+  }
+  function openPreview(wave) {
+    var w = D.outreach.waves.filter(function (x) { return x.key === wave; })[0];
+    var list = D.outreach.contacts;
+    var h = '<div class="drawer-bg" data-close></div><aside class="drawer wide" role="dialog" aria-modal="true" aria-labelledby="dr-title" tabindex="-1"><button class="x" data-close aria-label="Đóng">×</button>' +
+      '<h2 id="dr-title">Xem trước: ' + esc(w.title) + '</h2><div class="row2" style="margin:10px 0"><select class="i" id="pv-who">' + list.map(function (c) { return '<option value="' + c.id + '">' + esc(c.name) + '</option>'; }).join('') + '</select><span class="hint" style="align-self:center">Nội dung lấy theo cài đặt hiện tại. Registry không thuộc đợt này sẽ hiện người đầu tiên của đợt.</span></div>' +
+      '<iframe class="pv-frame" id="pv-frame" title="Xem trước email" sandbox></iframe></aside>';
+    var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
+    root.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
+    var go = function () { $('#pv-frame').src = '/admin/api/outreach/preview?wave=' + encodeURIComponent(wave) + '&contact=' + encodeURIComponent($('#pv-who').value); };
+    $('#pv-who').addEventListener('change', go); go();
+  }
+  function vReports() {
+    var r = D.outreach.reports, has = function (f) { return r.some(function (x) { return x.file === f; }); };
+    var pdfs = r.filter(function (x) { return /\.pdf$/.test(x.file); });
+    var cur = reportView || (has('internal.html') ? 'internal.html' : (pdfs[0] && pdfs[0].file));
+    var h = '<div class="head"><h1>Báo cáo MDF 2026</h1><span class="sub">Chỉ người đăng nhập dashboard xem được</span><div class="right">' +
+      (has('internal.html') ? '<button class="btn' + (cur === 'internal.html' ? ' primary' : '') + '" data-rep="internal.html">Tổng hợp nội bộ</button>' : '') +
+      pdfs.map(function (x) { return '<button class="btn' + (cur === x.file ? ' primary' : '') + '" data-rep="' + esc(x.file) + '">.' + esc(x.file.replace('.pdf', '')) + ' (PDF)</button>'; }).join('') + '</div></div>';
+    if (!cur) return h + '<div class="banner warn">Chưa có báo cáo. Vào <b>Lịch gửi email → Nhập file</b> và chọn <b>mdf2027-dashboard-import.json</b>.</div>';
+    h += '<p class="hint" style="margin:-8px 0 10px">' + (cur === 'internal.html' ? 'Bản nội bộ: có tab cho từng đuôi, không gửi ra ngoài.' : 'Bản PDF gửi registry (đính kèm tự động trong email Package Offer).') + ' <a href="/admin/api/reports/file?name=' + encodeURIComponent(cur) + '" target="_blank" rel="noopener">Mở tab mới</a></p>';
+    return h + '<iframe class="rep-frame" title="Báo cáo" src="/admin/api/reports/file?name=' + encodeURIComponent(cur) + '"' + (cur.endsWith('.html') ? ' sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"' : '') + '></iframe>';
+  }
+  var reportView = null;
+
   function kpi(l, v, s) { return '<div class="kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="s">' + s + '</div></div>'; }
   function todoItem(r) {
     var due = '';
@@ -609,10 +722,31 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 
   /* ── bindings ── */
   function bind(c) {
+    c.querySelectorAll('[data-rep]').forEach(function (b) { b.addEventListener('click', function () { reportView = b.getAttribute('data-rep'); render(); }); });
+    c.querySelectorAll('[data-cedit]').forEach(function (b) { b.addEventListener('click', function () { openContact(b.getAttribute('data-cedit')); }); });
+    var cn = c.querySelector('[data-act="contact-new"]'); if (cn) cn.addEventListener('click', function () { openContact(null); });
+    var imp = c.querySelector('#imp-file');
+    if (imp) imp.addEventListener('change', function () {
+      var f = imp.files[0]; if (!f) return;
+      if (D.outreach.contacts.length && !confirm('Nhập file sẽ thay toàn bộ danh sách liên hệ hiện tại. Tiếp tục?')) { imp.value = ''; return; }
+      f.text().then(function (t) { return api('outreach/import', JSON.parse(t)); })
+        .then(function (r) { toast('Đã nhập ' + r.contacts + ' liên hệ, ' + r.reports.length + ' báo cáo'); load(); })
+        .catch(function (e) { toast(e.message || 'File không hợp lệ', true); });
+    });
+    c.querySelectorAll('[data-wave]').forEach(function (row) {
+      var key = row.getAttribute('data-wave');
+      var save = function (b, msg) { b.key = key; return api('outreach/wave', b).then(function () { if (msg) toast(msg); return load(); }).catch(function (e) { toast(e.message, true); }); };
+      row.querySelector('[data-wstatus]').addEventListener('change', function (e) { save({ status: e.target.value }, 'Đã cập nhật'); });
+      row.querySelector('[data-wdate]').addEventListener('change', function (e) { if (e.target.value) save({ date: e.target.value }, 'Đã đổi ngày'); });
+      var rs = row.querySelector('[data-wreset]'); if (rs) rs.addEventListener('click', function () { save({ date: '' }, 'Đã về ngày tự tính'); });
+      var nt = row.querySelector('[data-wnote]'); nt.addEventListener('change', function () { api('outreach/wave', { key: key, note: nt.value }).then(function () { toast('Đã lưu ghi chú'); }); });
+      var pv = row.querySelector('[data-wpreview]'); if (pv) pv.addEventListener('click', function () { openPreview(key); });
+    });
     c.querySelectorAll('[data-open]').forEach(function (el) { el.addEventListener('click', function () { openReg(el.getAttribute('data-open')); }); });
     c.querySelectorAll('[data-filter]').forEach(function (el) { el.addEventListener('click', function () { filter = el.getAttribute('data-filter'); render(); }); });
     var s = c.querySelector('#search');
     if (s) s.addEventListener('input', function () { q = s.value; var pos = s.selectionStart; render(); var n = $('#search'); n.focus(); n.setSelectionRange(pos, pos); });
+    c.querySelectorAll('[data-goto-tab]').forEach(function (b) { b.addEventListener('click', function () { var t = document.querySelector('.side .tab[data-tab="' + b.getAttribute('data-goto-tab') + '"]'); if (t) t.click(); }); });
     var rl = c.querySelector('[data-act="reload"]'); if (rl) rl.addEventListener('click', function () { load().then(function () { toast('Đã làm mới'); }); });
     var te = c.querySelector('[data-act="test-email"]');
     if (te) te.addEventListener('click', function () { api('test-email', { to: $('#s-test').value }).then(function () { toast('Đã gửi email thử'); load(); }).catch(function (e) { toast(e.message, true); }); });

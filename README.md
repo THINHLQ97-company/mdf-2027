@@ -55,3 +55,9 @@ duplicate-request reuse, and a cap on active packages per email domain.
 - **Change password, save settings, remove the Authenticator:** code emailed to `ADMIN_EMAIL` (changing the password or removing the app signs everyone out).
 - **First deploy:** open `/admin/`, choose "Đặt mật khẩu lần đầu", get the emailed code, set a password, then sign in and link the app.
 - **Locked out (phone and recovery codes lost):** someone with server access removes the `totp` field from `auth` in `data/db.json` and restarts; the next sign-in links a new phone.
+
+## Partner outreach and reports
+
+- Dashboard tab **Lịch gửi email**: eight send waves. Dates are computed from the programme settings (opening, early-bird end, closing) and can be overridden per wave. Each wave has a status, a note and, where it has a template, **Tải email (.msg)**: a zip of Outlook drafts (plus .eml copies) built at download time from the current settings, prices and slots left, grouped by recipient time zone.
+- Registry contacts, the 2026 report PDFs and the internal report are imported once from a JSON bundle (**Nhập file**) and stored in `data/` only. They are never committed (the repository is public).
+- Dashboard tab **Báo cáo 2026** shows the internal report and the registry PDFs to signed-in admins.

@@ -37,6 +37,7 @@ const mailer = createMailer(env, path.join(DATA_DIR, 'outbox'));
 const emails = createEmails(ROOT, BASE_URL, env.EMAIL_ASSET_URL);
 
 const PLAN_KEYS = ['silver', 'gold', 'diamond'];
+const { createOutreach } = require('./outreach');
 const FREE_MAIL = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126|mail|gmx|yandex|zoho)\./i;
 const ACTIVE = ['on_hold', 'confirmed'];
 
@@ -117,10 +118,10 @@ function send(res, status, body, headers) {
   }, headers || {}));
   res.end(isStr ? body : JSON.stringify(body));
 }
-function readJson(req) {
+function readJson(req, max = 32e3) {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
-    req.on('data', (c) => { size += c.length; if (size > 32e3) { reject(Object.assign(new Error('Payload too large'), { status: 413 })); req.destroy(); } else chunks.push(c); });
+    req.on('data', (c) => { size += c.length; if (size > max) { reject(Object.assign(new Error('Payload too large'), { status: 413 })); req.destroy(); } else chunks.push(c); });
     req.on('end', () => { try { resolve(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch (e) { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); } });
     req.on('error', reject);
   });
@@ -451,6 +452,9 @@ function csv() {
   return '﻿' + [cols.join(',')].concat(db.registrations.map((r) => cols.map((c) => cell(r[c])).join(','))).join('\r\n');
 }
 
+let outreach = null;
+const getOutreach = () => outreach || (outreach = createOutreach({ root: ROOT, dataDir: DATA_DIR, baseUrl: BASE_URL, db, store, availability }));
+
 async function admin(req, res, url) {
   const p = url.pathname;
   const sessCookie = (v) => ({ 'Set-Cookie': `mdf_admin=${v}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=${v ? 43200 : 0}${cookieFlags}` });
@@ -542,7 +546,7 @@ async function admin(req, res, url) {
     return send(res, 200, {
       me: who, security: { email: ADMIN_EMAIL, totpAt: db.auth.totpAt || null, recoveryLeft: (db.auth.recovery || []).length, passwordSetAt: db.auth.passwordSetAt || null }, mailProvider: mailer.provider, baseUrl: BASE_URL, status: publicStatus(), settings: db.settings, stats: stats(),
       registrations: db.registrations.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(publicReg),
-      audit: db.audit.slice(0, 200), mailLog: db.mailLog.slice(0, 200)
+      audit: db.audit.slice(0, 200), mailLog: db.mailLog.slice(0, 200), outreach: getOutreach().summary()
     });
   }
   const m = p.match(/^\/admin\/api\/reg\/([\w-]+)$/);
@@ -562,6 +566,25 @@ async function admin(req, res, url) {
     const r = useCode(b.challenge, b.code, 'settings');
     if (r.error) return send(res, 401, { error: r.error, keep: true });
     updateSettings(b, who); return send(res, 200, { ok: true, settings: db.settings });
+  }
+  // Outreach: schedule, contacts, drafts, reports (admin only; contacts and reports stay in the data folder).
+  if (p === '/admin/api/outreach/wave' && req.method === 'POST') { getOutreach().updateWave(await readJson(req), who); return send(res, 200, { ok: true }); }
+  if (p === '/admin/api/outreach/contact' && req.method === 'POST') return send(res, 200, { ok: true, contact: getOutreach().updateContact(await readJson(req), who) });
+  if (p === '/admin/api/outreach/import' && req.method === 'POST') return send(res, 200, Object.assign({ ok: true }, getOutreach().importBundle(await readJson(req, 30e6), who)));
+  if (p === '/admin/api/outreach/download' && req.method === 'GET') {
+    const z = getOutreach().waveZip(url.searchParams.get('wave'));
+    store.audit('drafts downloaded', null, who, `${url.searchParams.get('wave')} · ${z.count} email`);
+    return send(res, 200, z.data, { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${z.name}"` });
+  }
+  if (p === '/admin/api/outreach/preview' && req.method === 'GET') {
+    const h = getOutreach().preview(url.searchParams.get('wave'), url.searchParams.get('contact'));
+    return send(res, h ? 200 : 404, h || 'Không có email để xem trước.', { 'Content-Security-Policy': "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'" });
+  }
+  if (p === '/admin/api/reports/file' && req.method === 'GET') {
+    const f = getOutreach().reportFile(url.searchParams.get('name'));
+    if (!f) return send(res, 404, 'Not found');
+    const csp = f.type.startsWith('text/html') ? { 'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'" } : {};
+    return send(res, 200, fs.readFileSync(f.path), Object.assign({ 'Content-Type': f.type, 'Content-Disposition': 'inline' }, csp));
   }
   if (p === '/admin/api/export.csv' && req.method === 'GET') return send(res, 200, csv(), { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="mdf-2027-registrations.csv"' });
   if (p === '/admin/api/test-email' && req.method === 'POST') {
