@@ -167,6 +167,7 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
     return db.registrations.filter((r) => ACTIVE.includes(r.status) && (r.tlds.some((t) => tl.has(t)) || doms.has(domain(r.email).toLowerCase())));
   }
   const inAudience = (c, a) => {
+    if (c.paused) return false;   // handled one to one (e.g. a custom deal), left out of every wave
     const reg = registrationsOf(c).length > 0;
     return a === 'partner' ? c.group === 'partner' : a === 'new' ? c.group === 'new' : a === 'unreg' ? !reg : a === 'partner-unreg' ? c.group === 'partner' && !reg : a === 'registered' ? reg : false;
   };
@@ -358,7 +359,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       group: x.group === 'partner' ? 'partner' : 'new', tz: TZ[x.tz] ? x.tz : 'asia', greet: String(x.greet || '').trim().slice(0, 160) || 'Dear Registry team,',
       to: cleanPeople(x.to), cc: cleanPeople(x.cc), plan: ['diamond', 'gold', 'silver'].includes(x.plan) ? x.plan : '',
       results: (Array.isArray(x.results) ? x.results : []).map((r) => String(r).slice(0, 600)).slice(0, 4), why: String(x.why || '').slice(0, 600),
-      note: String(x.note || '').slice(0, 1200),
+      note: String(x.note || '').slice(0, 1200), paused: x.paused === true,
       pdf: String(x.pdf || '').replace(/[^\w-]/g, '').slice(0, 30),
       pdfToken: /^[\w-]{20,64}$/.test(String(x.pdfToken || '')) ? x.pdfToken : (x.pdf ? crypto.randomBytes(18).toString('base64url') : '')
     };
