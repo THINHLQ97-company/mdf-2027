@@ -199,6 +199,8 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
   const TH = (t, r) => `<td style="padding:9px 12px;background:#0b1550;color:#ffffff;font-family:${FONT};font-size:10.5pt;font-weight:bold;${r ? 'text-align:right;' : ''}">${t}</td>`;
   const TD = (t, r, b, bg) => `<td style="padding:9px 12px;border-bottom:1px solid #d9def0;font-family:${FONT};font-size:11pt;color:#1d1d1b;${r ? 'text-align:right;white-space:nowrap;' : ''}${b ? 'font-weight:bold;' : ''}${bg ? 'background:' + bg + ';' : ''}">${t}</td>`;
   const TABLE = (head, rows) => `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:640px;margin:4px 0 12px;border:1px solid #d9def0;"><tr>${head}</tr>${rows.join('')}</table>`;
+  // Plain text from the dashboard: blank line = new paragraph, **bold**.
+  const paras = (t) => String(t || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).map((x) => P(esc(x).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')));
   const NOTE = (t) => P(`<span style="color:#4b5470;font-size:10.5pt;">${t}</span>`);
   const planName = (k) => ({ diamond: 'Diamond', gold: 'Gold', silver: 'Silver' })[k] || k;
   const page = (inner) => `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body style="margin:0;padding:0;background:#ffffff;"><div style="max-width:680px;">
@@ -239,19 +241,25 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
     offer(c, k) {
       const pl = k.plans[c.plan] || k.plans.silver;
       const price = k.eb ? pl.eb : pl.list;
+      const alt = c.alt && c.alt !== c.plan && k.plans[c.alt] ? c.alt : '';
+      const offerTable = alt
+        ? TABLE(TH('Option') + TH('Package') + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (until ${k.ebShort})` : 'Early bird', 1) + TH('Slots', 1),
+          [[c.plan, 'Recommended'], [alt, 'Alternative']].map(([p, tag]) => `<tr>${TD('<b>' + tag + '</b>')}${TD(`<b>${planName(p)}</b> · ${esc(c.label)}${p === 'diamond' ? '<br><span style="font-size:10pt;color:#4b5470;">with Registration Guarantee</span>' : ''}`)}${TD(money(k.plans[p].list), 1)}${TD(k.eb ? money(k.plans[p].eb) : '–', 1, 1)}${TD(String(k.plans[p].slots), 1)}</tr>`))
+        : TABLE(TH('Package (offer)') + TH('Qty', 1) + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (${k.pct}% off)` : 'Early bird', 1) + TH('Total', 1), [
+          `<tr>${TD(`<b>${planName(c.plan)}</b> · ${esc(c.label)}`)}${TD('1', 1)}${TD(money(pl.list), 1)}${TD(k.eb ? 'Yes, until ' + k.ebShort : '–', 1)}${TD(money(price), 1, 1)}</tr>`,
+          `<tr>${TD('TOTAL', 0, 1, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD(money(price), 1, 1, '#f3f5fb')}</tr>`]);
       return {
-        subject: `Mat Bao MDF 2027: ${c.label} 2026 Results & Your Exclusive Offer`,
+        subject: c.subject || `Mat Bao MDF 2027: ${c.label} 2026 Results & Your Exclusive Offer`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P('I hope this email finds you well.'),
-          P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026 (attached as PDF), together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
+          ...(c.intro ? paras(c.intro) : [P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026 (attached as PDF), together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`)]),
           ...(c.results && c.results.length ? [H('', `${esc(c.label)} at Mat Bao in 2026`), UL(c.results)] : []),
+          ...paras(c.resultsNote),
           H('', 'What’s new in MDF 2027: Beyond Visibility, Guaranteed Growth'), P('Every 2027 package is measured by new registrations of your TLD, not just impressions:'), whatsNew(),
-          H('', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '', bundleNote(c), callout(c),
-          TABLE(TH('Package (offer)') + TH('Qty', 1) + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (${k.pct}% off)` : 'Early bird', 1) + TH('Total', 1), [
-            `<tr>${TD(`<b>${planName(c.plan)}</b> · ${esc(c.label)}`)}${TD('1', 1)}${TD(money(pl.list), 1)}${TD(k.eb ? 'Yes, until ' + k.ebShort : '–', 1)}${TD(money(price), 1, 1)}</tr>`,
-            `<tr>${TD('TOTAL', 0, 1, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD(money(price), 1, 1, '#f3f5fb')}</tr>`]),
-          NOTE(`${planName(c.plan)} has ${pl.slots} slots in 2027. Half-year billing is also available; ${ebLine(k)}.`),
+          H('', `Our recommendation for ${esc(c.label)}`), ...paras(c.why), bundleNote(c), callout(c),
+          offerTable,
+          NOTE(`${alt ? 'Fees are per 12 months, January to December 2027' : planName(c.plan) + ' has ' + pl.slots + ' slots in 2027'}. Half-year billing is also available; ${ebLine(k)}.`),
           H('', 'Key dates'), datesBox(k), H('', 'How to register'), howTo('<b>' + esc((c.tlds && c.tlds[0]) || 'your TLD') + '</b>'),
-          P(`Let’s keep growing ${esc(c.label)} in Vietnam together in 2027!`, 'font-weight:bold;')]
+          ...(c.closing ? paras(c.closing).map((x) => x.replace('<p style="', '<p style="font-weight:bold;')) : [P(`Let’s keep growing ${esc(c.label)} in Vietnam together in 2027!`, 'font-weight:bold;')])]
       };
     },
     invite(c, k) {
@@ -360,6 +368,8 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       to: cleanPeople(x.to), cc: cleanPeople(x.cc), plan: ['diamond', 'gold', 'silver'].includes(x.plan) ? x.plan : '',
       results: (Array.isArray(x.results) ? x.results : []).map((r) => String(r).slice(0, 600)).slice(0, 4), why: String(x.why || '').slice(0, 600),
       note: String(x.note || '').slice(0, 1200), paused: x.paused === true,
+      subject: String(x.subject || '').trim().slice(0, 200), intro: String(x.intro || '').slice(0, 3000), resultsNote: String(x.resultsNote || '').slice(0, 3000),
+      closing: String(x.closing || '').slice(0, 1500), alt: ['diamond', 'gold', 'silver'].includes(x.alt) ? x.alt : '',
       pdf: String(x.pdf || '').replace(/[^\w-]/g, '').slice(0, 30),
       pdfToken: /^[\w-]{20,64}$/.test(String(x.pdfToken || '')) ? x.pdfToken : (x.pdf ? crypto.randomBytes(18).toString('base64url') : '')
     };

@@ -531,8 +531,14 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       '<div class="row2"><label class="f">Nhóm<select class="i" name="group"><option value="partner"' + (c.group === 'partner' ? ' selected' : '') + '>Đối tác 2026</option><option value="new"' + (c.group === 'new' ? ' selected' : '') + '>Registry mới</option></select></label>' +
       '<label class="f">Múi giờ<select class="i" name="tz">' + Object.keys(TZN).map(function (k) { return '<option value="' + k + '"' + (c.tz === k ? ' selected' : '') + '>' + TZN[k] + '</option>'; }).join('') + '</select></label></div>' +
       '<label class="f">Gói đề xuất<select class="i" name="plan"><option value="">Không</option>' + PLANS.map(function (k) { return '<option value="' + k + '"' + (c.plan === k ? ' selected' : '') + '>' + k.toUpperCase() + '</option>'; }).join('') + '</select></label>' +
-      '<label class="f">Lý do đề xuất (trong Package Offer)<textarea class="i" name="why" rows="3">' + esc(c.why) + '</textarea></label>' +
+      '<label class="f">Lý do đề xuất (trong Package Offer; dòng trống = đoạn mới)<textarea class="i" name="why" rows="4">' + esc(c.why) + '</textarea></label>' +
       '<label class="f">Lời nhắn riêng (khung nổi bật trong email Package Offer, mở đăng ký, early bird)<textarea class="i" name="note" rows="4">' + esc(c.note || '') + '</textarea></label>' +
+      '<details style="border:1px solid var(--line);border-radius:10px;padding:10px 12px"><summary style="cursor:pointer;font-weight:600">Tuỳ chỉnh thư Package Offer (để trống = dùng mẫu chung)</summary><div style="display:grid;gap:12px;margin-top:12px">' +
+      '<label class="f">Tiêu đề thư<input class="i" name="subject" value="' + esc(c.subject || '') + '" placeholder="Mat Bao MDF 2027: ' + esc(c.label || '.TLD') + ' 2026 Results &amp; Your Exclusive Offer"></label>' +
+      '<label class="f">Đoạn mở đầu (dòng trống = đoạn mới, **chữ đậm**)<textarea class="i" name="intro" rows="5">' + esc(c.intro || '') + '</textarea></label>' +
+      '<label class="f">Nhận xét sau số liệu 2026<textarea class="i" name="resultsNote" rows="4">' + esc(c.resultsNote || '') + '</textarea></label>' +
+      '<label class="f">Gói thay thế (hiện bảng 2 lựa chọn)<select class="i" name="alt"><option value="">Không</option>' + PLANS.map(function (k) { return '<option value="' + k + '"' + (c.alt === k ? ' selected' : '') + '>' + k.toUpperCase() + '</option>'; }).join('') + '</select></label>' +
+      '<label class="f">Câu kết<textarea class="i" name="closing" rows="2">' + esc(c.closing || '') + '</textarea></label></div></details>' +
       '<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="paused"' + (c.paused ? ' checked' : '') + '> Tạm dừng: không đưa registry này vào các đợt gửi (đang trao đổi riêng)</label>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Lưu</button>' + (c.id ? '<button class="btn bad" type="button" data-cdel>Xoá</button>' : '') + '</div></form></aside>';
     var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
@@ -540,7 +546,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     var parse = function (v) { return v.split('\n').map(function (l) { var m = l.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/); return m ? { name: m[1], email: m[2] } : { name: '', email: l.trim() }; }).filter(function (x) { return x.email; }); };
     root.querySelector('#ct-form').addEventListener('submit', function (e) {
       e.preventDefault(); var f = e.target;
-      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value, note: f.note.value, paused: f.paused.checked })
+      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value, note: f.note.value, paused: f.paused.checked, subject: f.subject.value, intro: f.intro.value, resultsNote: f.resultsNote.value, alt: f.alt.value, closing: f.closing.value })
         .then(function () { closeDrawer(); toast('Đã lưu'); load(); }).catch(function (er) { toast(er.message, true); });
     });
     var del = root.querySelector('[data-cdel]');
