@@ -627,6 +627,14 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/verify' && req.method === 'GET') return await verify(req, res, url);
     const ob = url.pathname.match(/^\/obligation\/([\w-]+)$/);
     if (ob && req.method === 'GET') return obligationPage(req, res, ob[1]);
+    const rp = url.pathname.match(/^\/r\/([\w-]{20,64})$/);
+    if (rp && req.method === 'GET') {
+      if (limited('report:' + clientIp(req), 60, 3600e3)) return send(res, 429, 'Too many requests');
+      const f = getOutreach().reportByToken(rp[1]);
+      if (!f) return send(res, 404, 'Not found');
+      store.audit('report opened', null, 'registry', f.name);
+      return send(res, 200, fs.readFileSync(f.path), { 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${f.filename.replace(/[^\x20-\x7e]/g, '')}"`, 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' });
+    }
     if (url.pathname.startsWith('/admin/api/')) return await admin(req, res, url);
     if (url.pathname === '/admin') { res.writeHead(301, { Location: '/admin/' }); return res.end(); }
     if (req.method === 'GET' || req.method === 'HEAD') return serveStatic(req, res, url);

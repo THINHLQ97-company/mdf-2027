@@ -89,7 +89,7 @@ function writeMsg(m) {
   });
   atts.forEach((a, i) => {
     const dir = '/__attach_version1.0_#' + i.toString(16).toUpperCase().padStart(8, '0');
-    const p = propsBlock([[0x3705, T.I32, 1], [0x0E21, T.I32, i], [0x0FFE, T.I32, 7], [0x370B, T.I32, -1], [0x0E20, T.I32, a.data.length],
+    const p = propsBlock([[0x3705, T.I32, 1], [0x0E21, T.I32, i], [0x0FFE, T.I32, 7], [0x370B, T.I32, -1],
       [0x3701, T.BIN, a.data], [0x3704, T.STR, a.filename], [0x3707, T.STR, a.filename], [0x3001, T.STR, a.filename], [0x370E, T.STR, a.mime],
       [0x3703, T.STR, path.extname(a.filename)], ...(a.cid ? [[0x3712, T.STR, a.cid], [0x7FFE, T.BOOL, true], [0x3714, T.I32, 4]] : [])]);
     add(dir + '/__properties_version1.0', Buffer.concat([Buffer.alloc(8), p.fixed]));
@@ -138,8 +138,7 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
   db.outreach = db.outreach || {};
   db.outreach.contacts = db.outreach.contacts || [];
   db.outreach.waves = db.outreach.waves || {};
-  const img = (f) => fs.readFileSync(path.join(root, 'images', f));
-  const SIGNATURE = fs.readFileSync(path.join(__dirname, 'email-signature.html'), 'utf8').replace(/cid:[\w-]+/g, 'cid:mb-signature');
+  const SIGNATURE = fs.readFileSync(path.join(__dirname, 'email-signature.html'), 'utf8').replace(/cid:[\w-]+/g, baseUrl + '/images/email-signature-mb.png');
   const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
   const domain = (e) => String(e || '').split('@')[1] || '';
@@ -202,7 +201,7 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
   const NOTE = (t) => P(`<span style="color:#4b5470;font-size:10.5pt;">${t}</span>`);
   const planName = (k) => ({ diamond: 'Diamond', gold: 'Gold', silver: 'Silver' })[k] || k;
   const page = (inner) => `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body style="margin:0;padding:0;background:#ffffff;"><div style="max-width:680px;">
-<img src="cid:mdf2027-banner" width="640" alt="Mat Bao MDF Program 2027: Beyond Visibility, Guaranteed Growth" style="display:block;width:100%;max-width:640px;height:auto;border:0;margin:0 0 18px;">
+<img src="${baseUrl}/images/email-banner-2027.jpg" width="640" alt="Mat Bao MDF Program 2027: Beyond Visibility, Guaranteed Growth" style="display:block;width:100%;max-width:640px;height:auto;border:0;margin:0 0 18px;">
 ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNATURE}</body></html>`;
 
   function datesBox(k) {
@@ -230,10 +229,11 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       const pl = k.plans[c.plan] || k.plans.silver;
       const price = k.eb ? pl.eb : pl.list;
       return {
-        subject: `Mat Bao MDF 2027: ${c.label} 2026 Results & Your Exclusive Offer`, pdf: true,
+        subject: `Mat Bao MDF 2027: ${c.label} 2026 Results & Your Exclusive Offer`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P('I hope this email finds you well.'),
-          P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026${hasPdf(c) ? ' (attached as PDF)' : ''}, together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
+          P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026, together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
           ...(c.results && c.results.length ? [H('📊', `${esc(c.label)} at Mat Bao in 2026`), UL(c.results)] : []),
+          hasPdf(c) && c.pdfToken ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:2px 0 14px;"><tr><td style="background:#0b1550;border-radius:8px;"><a href="${baseUrl}/r/${c.pdfToken}" style="display:inline-block;padding:11px 20px;font-family:${FONT};font-size:11pt;font-weight:bold;color:#ffffff;text-decoration:none;">📄 Download your 2026 report (PDF)</a></td></tr></table>` : '',
           H('✨', 'What’s new in MDF 2027: Beyond Visibility, Guaranteed Growth'), P('Every 2027 package is measured by new registrations of your TLD, not just impressions:'), whatsNew(),
           H('🚀', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '',
           TABLE(TH('Package (offer)') + TH('Qty', 1) + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (${k.pct}% off)` : 'Early bird', 1) + TH('Total', 1), [
@@ -306,11 +306,8 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
     const k = facts();
     const e = TEMPLATES[w.tpl](c, k);
     const html = page(e.inner.filter(Boolean).join('\n'));
-    const attachments = [
-      { filename: 'mdf2027-banner.jpg', mime: 'image/jpeg', cid: 'mdf2027-banner', data: img('email-banner-2027.jpg') },
-      { filename: 'matbao-signature.png', mime: 'image/png', cid: 'mb-signature', data: img('email-signature-mb.png') }
-    ];
-    if (e.pdf && hasPdf(c)) attachments.push({ filename: `Mat Bao MDF 2026 Results - ${c.label}.pdf`, mime: 'application/pdf', data: fs.readFileSync(path.join(REPORTS, c.pdf + '.pdf')) });
+    // No attachments: images load from the site and the report is a private link. Outlook (new) cannot handle attachments in imported .msg drafts.
+    const attachments = [];
     return { subject: e.subject, html, text: toText(e.inner.filter(Boolean).join('\n')) + '\n\nLAM QUANG THINH (RICKY)\nSenior Marketing Executive\nMat Bao Corporation', to: c.to || [], cc: c.cc || [], attachments };
   }
 
@@ -336,8 +333,8 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
     const c = list.find((x) => x.id === contactId) || list[0];
     if (!c) return null;
     const m = buildEmail(waveKey, c);
-    const head = `<div style="font:13px/1.5 Arial,sans-serif;background:#f3f5fb;border-bottom:1px solid #d9def0;padding:10px 14px;margin:0 0 12px;"><b>Subject:</b> ${esc(m.subject)}<br><b>To:</b> ${esc(m.to.map((r) => r.email).join(', ') || '(chưa có)')}<br><b>Cc:</b> ${esc(m.cc.map((r) => r.email).join(', '))}${m.attachments.some((a) => !a.cid) ? '<br><b>Attachment:</b> ' + esc(m.attachments.filter((a) => !a.cid).map((a) => a.filename).join(', ')) : ''}</div>`;
-    return m.html.replace(/cid:mdf2027-banner/g, '/images/email-banner-2027.jpg').replace(/cid:mb-signature/g, '/images/email-signature-mb.png').replace('<body style="margin:0;padding:0;background:#ffffff;">', '<body style="margin:0;padding:0 12px;background:#ffffff;">' + head);
+    const head = `<div style="font:13px/1.5 Arial,sans-serif;background:#f3f5fb;border-bottom:1px solid #d9def0;padding:10px 14px;margin:0 0 12px;"><b>Subject:</b> ${esc(m.subject)}<br><b>To:</b> ${esc(m.to.map((r) => r.email).join(', ') || '(chưa có)')}<br><b>Cc:</b> ${esc(m.cc.map((r) => r.email).join(', '))}${c.group === 'partner' && w.tpl === 'offer' && hasPdf(c) && c.pdfToken ? '<br><b>Report link:</b> ' + esc(baseUrl + '/r/' + c.pdfToken) : ''}</div>`;
+    return m.html.split(baseUrl + '/images/').join('/images/').replace('<body style="margin:0;padding:0;background:#ffffff;">', '<body style="margin:0;padding:0 12px;background:#ffffff;">' + head);
   }
 
   /* ── edits ── */
@@ -352,7 +349,8 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       group: x.group === 'partner' ? 'partner' : 'new', tz: TZ[x.tz] ? x.tz : 'asia', greet: String(x.greet || '').trim().slice(0, 160) || 'Dear Registry team,',
       to: cleanPeople(x.to), cc: cleanPeople(x.cc), plan: ['diamond', 'gold', 'silver'].includes(x.plan) ? x.plan : '',
       results: (Array.isArray(x.results) ? x.results : []).map((r) => String(r).slice(0, 600)).slice(0, 4), why: String(x.why || '').slice(0, 600),
-      pdf: String(x.pdf || '').replace(/[^\w-]/g, '').slice(0, 30)
+      pdf: String(x.pdf || '').replace(/[^\w-]/g, '').slice(0, 30),
+      pdfToken: /^[\w-]{20,64}$/.test(String(x.pdfToken || '')) ? x.pdfToken : (x.pdf ? crypto.randomBytes(18).toString('base64url') : '')
     };
   }
   function importBundle(b, who) {
@@ -408,7 +406,13 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       contacts: db.outreach.contacts.map((c) => Object.assign({}, c, { registered: registrationsOf(c).map((r) => ({ tld: r.tlds[0], plan: r.plan, status: r.status })), hasPdf: hasPdf(c) }))
     };
   }
-  return { summary, waveZip, preview, importBundle, updateContact, updateWave, reportFile };
+  // Private report link: /r/<token> serves that registry's PDF only.
+  function reportByToken(tok) {
+    const c = db.outreach.contacts.find((x) => x.pdfToken && x.pdfToken === tok);
+    if (!c || !hasPdf(c)) return null;
+    return { path: path.join(REPORTS, c.pdf + '.pdf'), filename: `Mat Bao MDF 2026 Results - ${c.label}.pdf`, name: c.name };
+  }
+  return { summary, waveZip, preview, importBundle, updateContact, updateWave, reportFile, reportByToken };
 }
 
 module.exports = { createOutreach, writeMsg, writeEml, zip };
