@@ -25,7 +25,7 @@ const WAVES = [
   { key: 'prep', title: 'Chuẩn bị nội bộ', who: 'Nội bộ', desc: 'Bổ sung người nhận còn thiếu. Đăng ký thử 1 lần trên trang thật bằng email nội bộ (nhận đủ email, dashboard thấy đăng ký), sau đó huỷ đăng ký thử.', date: (k) => weekdayBefore(addDays(k.start, -9)) },
   { key: 'offer', title: 'Package Offer + báo cáo 2026', who: 'Đối tác 2026', audience: 'partner', tpl: 'offer', desc: 'Đối tác cũ nhận trước: có thời gian đọc báo cáo và xin duyệt ngân sách trước ngày mở.', date: (k) => weekdayBefore(addDays(k.start, -5)) },
   { key: 'invite', title: 'Thư mời chung', who: 'Registry mới', audience: 'new', tpl: 'invite', desc: 'Thứ Ba – thứ Tư có tỉ lệ mở email cao; gửi vài ngày trước ngày mở.', date: (k) => weekdayBefore(addDays(k.start, -3)) },
-  { key: 'followup', title: 'Nhắn riêng đối tác chưa phản hồi', who: 'Đối tác 2026 chưa trả lời', audience: 'partner-unreg', desc: 'Nhắn WhatsApp hoặc gọi: đã xem báo cáo chưa, cần trao đổi gì trước ngày mở. Không cần email mẫu.', date: (k) => weekdayBefore(addDays(k.start, -2)) },
+  { key: 'followup', title: 'Nhắn riêng đối tác chưa phản hồi', who: 'Đối tác 2026 chưa trả lời', audience: 'partner-unreg', desc: 'Nhắn WhatsApp hoặc email: đã xem báo cáo chưa, cần trao đổi gì trước ngày mở. Không cần email mẫu.', date: (k) => weekdayBefore(addDays(k.start, -2)) },
   { key: 'open', title: 'Thông báo mở đăng ký', who: 'Tất cả chưa đăng ký', audience: 'unreg', tpl: 'open', desc: 'Ngày làm việc đầu tiên từ ngày mở. Email ngắn: đã mở, hạn early bird, số suất còn lại.', date: (k) => weekdayAfter(k.start) },
   { key: 'eb', title: 'Nhắc early bird lần cuối', who: 'Tất cả chưa đăng ký', audience: 'unreg', tpl: 'eb', desc: 'Khoảng 3 ngày làm việc trước khi hết early bird, kèm số suất còn lại.', date: (k) => (k.eb ? weekdayBefore(addDays(k.ebEnd, -3)) : null) },
   { key: 'final', title: 'Nhắc đóng đăng ký', who: 'Tất cả chưa đăng ký', audience: 'unreg', tpl: 'final', desc: 'Gửi trước ngày đóng, tránh tuần Giáng sinh.', date: (k) => weekdayBefore(addDays(k.end, -6)) },
@@ -280,7 +280,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
         subject: 'Mat Bao MDF 2027: Registration Is Now Open',
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`Registration for the <b>Mat Bao MDF 2027 Program</b> opened on ${k.startDay}. Slots are confirmed first come, first served${k.eb ? `, and the ${k.pct}% early bird price runs until <b>${k.ebDay}</b>` : ''}.`),
           rec, bundleNote(c, true), callout(c), H('', 'Slots available today'), slotsTable(k, true), H('', 'Book in a few minutes'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
-          P('Happy to answer any questions or walk you through the packages on a short call.')]
+          P('Happy to answer any questions: just reply to this email or message me on WhatsApp at +84 788 931 808.')]
       };
     },
     eb(c, k) {
