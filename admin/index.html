@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>MDF 2027 Dashboard</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+<link rel="apple-touch-icon" href="/images/icon-180.png">
+<meta name="theme-color" content="#060a26">
 <link rel="stylesheet" href="/css/fonts.css">
 <style>
 /* Layout: sidebar tabs + content; data-dense tables, status as coloured pills. */
@@ -39,6 +44,15 @@ textarea.i { resize: vertical; min-height: 70px; }
 .btn.bad { color: var(--bad); border-color: #f2c4bf; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .err { color: var(--bad); font-size: 14px; min-height: 20px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 14px; text-align: left; }
+.linkbtn:hover { text-decoration: underline; }
+.otp-in { letter-spacing: 8px; font: 700 24px/30px var(--f-display) !important; text-align: center; }
+.otp-bg { position: fixed; inset: 0; background: rgba(10,15,40,.45); z-index: 40; display: grid; place-items: center; padding: 16px; }
+.otp-box { width: 100%; max-width: 380px; background: var(--panel); border-radius: 14px; padding: 24px; display: grid; gap: 12px; box-shadow: 0 30px 80px rgba(0,0,0,.3); border-top: 4px solid #22d3ee; }
+.otp-box h2 { margin: 0; font: 700 19px/26px var(--f-display); }
+.otp-box p { margin: 0; color: var(--mute); font-size: 14px; }
+.otp-box .row { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.login .note-ok { color: var(--ok); font-size: 14px; }
 
 /* Shell */
 .app { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
@@ -172,11 +186,56 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   <img class="brand-logo" src="/images/Logo.svg" alt="MATBAO · Proposal Sponsorship 2027">
   <form id="login-form" autocomplete="on">
     <h1>Dashboard quản lý</h1>
-    <p>Đăng nhập để quản lý đăng ký và MDF của các registry.</p>
+    <p>Đăng nhập để quản lý đăng ký và MDF của các registry. Bắt buộc dùng ứng dụng Authenticator sau bước mật khẩu.</p>
+    <p class="note-ok" id="lg-ok" role="status"></p>
     <label class="f">Tên của bạn (ghi vào nhật ký thao tác)<input class="i" id="lg-name" required maxlength="40" autocomplete="name"></label>
     <label class="f">Mật khẩu<input class="i" id="lg-pass" type="password" required autocomplete="current-password"></label>
     <div class="err" id="lg-err" role="alert"></div>
+    <button class="btn primary" type="submit">Tiếp tục</button>
+    <button class="linkbtn" type="button" data-login="forgot">Quên / đặt mật khẩu</button>
+  </form>
+  <form id="otp-form" class="hidden" autocomplete="off">
+    <h1>Mã Authenticator</h1>
+    <p>Mở ứng dụng Authenticator trên điện thoại và nhập mã 6 số của <b>Mat Bao MDF 2027</b>.</p>
+    <label class="f">Mã 6 số<input class="i otp-in" id="otp-code" autocomplete="one-time-code" autocapitalize="characters" maxlength="9" required></label>
+    <div class="err" id="otp-err" role="alert"></div>
     <button class="btn primary" type="submit">Đăng nhập</button>
+    <p>Mất điện thoại? Nhập một <b>mã khôi phục</b> (dạng ABCD-EFGH) vào ô trên.</p>
+    <button class="linkbtn" type="button" data-login="back">Quay lại</button>
+  </form>
+  <form id="enroll-form" class="hidden" autocomplete="off" style="max-width:440px">
+    <h1>Gắn ứng dụng Authenticator</h1>
+    <p>Bắt buộc một lần. Dùng Google Authenticator, Microsoft Authenticator hoặc ứng dụng tương tự.</p>
+    <p><b>1.</b> Quét mã QR bằng ứng dụng:</p>
+    <div id="en-qr" style="justify-self:center;background:#fff;padding:10px;border-radius:10px;border:1px solid var(--line)"></div>
+    <p style="font-size:13px">Không quét được? Nhập khoá thủ công: <code id="en-secret" style="word-break:break-all;font-size:13px;color:var(--ink)"></code></p>
+    <label class="f"><span><b>2.</b> Mã 6 số trong ứng dụng</span><input class="i otp-in" id="en-totp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+    <label class="f"><span><b>3.</b> Mã vừa gửi tới <b class="acct-mail">marcom@matbao.com</b></span><input class="i otp-in" id="en-code" inputmode="numeric" maxlength="6" required></label>
+    <div class="err" id="en-err" role="alert"></div>
+    <button class="btn primary" type="submit">Xác nhận và đăng nhập</button>
+    <button class="linkbtn" type="button" data-login="back">Quay lại</button>
+  </form>
+  <div id="rc-box" class="hidden" style="width:100%;max-width:440px;background:var(--panel);border-radius:14px;padding:28px;display:grid;gap:14px;border-top:4px solid #22d3ee">
+    <h1 style="margin:0;font:700 22px/30px var(--f-display)">Lưu mã khôi phục</h1>
+    <p>Mỗi mã dùng được một lần, thay cho Authenticator khi mất điện thoại. Mã chỉ hiện một lần này: hãy lưu vào nơi an toàn (trình quản lý mật khẩu của team).</p>
+    <pre id="rc-list" style="margin:0;padding:14px;background:#f4f6fb;border-radius:10px;font:600 15px/26px ui-monospace,Consolas,monospace;columns:2;color:var(--ink)"></pre>
+    <button class="btn" type="button" data-login="rc-copy">Sao chép</button>
+    <button class="btn primary" type="button" data-login="rc-done">Tôi đã lưu, vào dashboard</button>
+  </div>
+  <form id="reset-form" class="hidden" autocomplete="off">
+    <h1 id="rs-title">Đặt lại mật khẩu</h1>
+    <p>Mã xác thực sẽ được gửi tới <b class="acct-mail">marcom@matbao.com</b>. Đặt mật khẩu mới sẽ đăng xuất mọi phiên đang mở.</p>
+    <div id="rs-step1"><button class="btn primary" type="button" data-login="send-reset" style="width:100%">Gửi mã tới email</button></div>
+    <div id="rs-step2" class="hidden" style="display:grid;gap:12px">
+      <label class="f">Mã gửi tới email<input class="i otp-in" id="rs-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+      <label class="f hidden" id="rs-totp-f">Mã Authenticator (hoặc mã khôi phục)<input class="i otp-in" id="rs-totp" autocapitalize="characters" maxlength="9"></label>
+      <label class="f">Mật khẩu mới<input class="i" id="rs-pass" type="password" autocomplete="new-password" minlength="12"></label>
+      <label class="f">Nhập lại mật khẩu mới<input class="i" id="rs-pass2" type="password" autocomplete="new-password"></label>
+      <p>Ít nhất 12 ký tự, có chữ thường, chữ hoa và số.</p>
+      <button class="btn primary" type="submit">Lưu mật khẩu mới</button>
+    </div>
+    <div class="err" id="rs-err" role="alert"></div>
+    <button class="linkbtn" type="button" data-login="back">Quay lại đăng nhập</button>
   </form>
 </div>
 
@@ -198,6 +257,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 <div id="drawer-root"></div>
 <div id="toast-root" aria-live="polite"></div>
 
+<script src="/admin/qrcode.js"></script>
 <script>
 (function () {
   'use strict';
@@ -238,22 +298,107 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     opt.credentials = 'same-origin';
     return fetch('/admin/api/' + path, opt).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (b) {
-        if (r.status === 401 && path !== 'login') { showLogin(); throw new Error(b.error || 'Hết phiên đăng nhập'); }
-        if (!r.ok) throw new Error(b.error || 'Lỗi ' + r.status);
+        if (r.status === 401 && !b.keep && !/^(login|forgot)/.test(path)) { showLogin(); throw new Error(b.error || 'Hết phiên đăng nhập'); }
+        if (!r.ok) { var er = new Error(b.error || 'Lỗi ' + r.status); er.restart = !!b.restart; throw er; }
         return b;
       });
     });
   }
 
   /* ── auth ── */
-  function showLogin() { $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#lg-name').focus(); }
+  var loginChallenge = null, resetChallenge = null;
+  function loginStep(id) {
+    ['login-form', 'otp-form', 'reset-form', 'enroll-form', 'rc-box'].forEach(function (f) { $('#' + f).classList.toggle('hidden', f !== id); });
+    ['lg-err', 'otp-err', 'rs-err', 'en-err'].forEach(function (e) { $('#' + e).textContent = ''; });
+    var first = $('#' + id).querySelector('input:not([type=hidden]), button.primary'); if (first) first.focus();
+  }
+  function showLogin() {
+    $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
+    fetch('/admin/api/account', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (a) {
+      document.querySelectorAll('.acct-mail').forEach(function (el) { el.textContent = a.email; });
+      if (!a.hasPassword) { openReset(true); } else loginStep('login-form');
+    }).catch(function () { loginStep('login-form'); });
+  }
+  function openReset(first) {
+    resetChallenge = null;
+    $('#rs-title').textContent = first ? 'Đặt mật khẩu lần đầu' : 'Đặt lại mật khẩu';
+    $('#rs-step1').classList.remove('hidden'); $('#rs-step2').classList.add('hidden');
+    loginStep('reset-form');
+  }
+  function sendLogin() {
+    try { localStorage.setItem('mdf-admin-name', $('#lg-name').value); } catch (x) {}
+    return api('login', { name: $('#lg-name').value, password: $('#lg-pass').value }).then(function (r) {
+      loginChallenge = r.challenge;
+      if (r.step === 'enroll') {
+        var qr = qrcode(0, 'M'); qr.addData(r.otpauth); qr.make();
+        $('#en-qr').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 0, scalable: false });
+        $('#en-secret').textContent = r.secret.replace(/(.{4})/g, '$1 ').trim();
+        $('#en-totp').value = ''; $('#en-code').value = ''; loginStep('enroll-form');
+      } else { $('#otp-code').value = ''; loginStep('otp-form'); }
+    });
+  }
   $('#login-form').addEventListener('submit', function (e) {
     e.preventDefault(); $('#lg-err').textContent = '';
-    try { localStorage.setItem('mdf-admin-name', $('#lg-name').value); } catch (x) {}
-    api('login', { name: $('#lg-name').value, password: $('#lg-pass').value }).then(function () { $('#lg-pass').value = ''; load(); })
-      .catch(function (err) { $('#lg-err').textContent = err.message; });
+    var btn = e.target.querySelector('.btn.primary'); btn.disabled = true;
+    sendLogin().catch(function (err) { $('#lg-err').textContent = err.message; }).finally(function () { btn.disabled = false; });
+  });
+  $('#otp-form').addEventListener('submit', function (e) {
+    e.preventDefault(); $('#otp-err').textContent = '';
+    api('login/verify', { challenge: loginChallenge, code: $('#otp-code').value }).then(function (r) {
+      $('#lg-pass').value = ''; $('#otp-code').value = ''; loginChallenge = null;
+      load().then(function () { if (r.recoveryLeft < 4) toast('Còn ' + r.recoveryLeft + ' mã khôi phục. Vào Cài đặt để gắn lại Authenticator và lấy mã mới.', true); });
+    }).catch(function (err) { $('#otp-err').textContent = err.message; if (err.restart) setTimeout(function () { loginStep('login-form'); }, 1500); });
+  });
+  $('#enroll-form').addEventListener('submit', function (e) {
+    e.preventDefault(); $('#en-err').textContent = '';
+    api('login/enroll', { challenge: loginChallenge, totp: $('#en-totp').value, code: $('#en-code').value }).then(function (r) {
+      $('#lg-pass').value = ''; loginChallenge = null;
+      $('#rc-list').textContent = r.recoveryCodes.join('\n'); loginStep('rc-box');
+    }).catch(function (err) { $('#en-err').textContent = err.message; if (err.restart) setTimeout(function () { loginStep('login-form'); }, 1500); });
+  });
+  $('#reset-form').addEventListener('submit', function (e) {
+    e.preventDefault(); $('#rs-err').textContent = '';
+    if ($('#rs-pass').value !== $('#rs-pass2').value) { $('#rs-err').textContent = 'Hai mật khẩu không khớp.'; return; }
+    api('forgot/reset', { challenge: resetChallenge, code: $('#rs-code').value, totp: $('#rs-totp').value, password: $('#rs-pass').value }).then(function () {
+      ['rs-code', 'rs-totp', 'rs-pass', 'rs-pass2'].forEach(function (x) { $('#' + x).value = ''; });
+      loginStep('login-form'); $('#lg-ok').textContent = 'Đã lưu mật khẩu mới. Vui lòng đăng nhập.';
+    }).catch(function (err) { $('#rs-err').textContent = err.message; });
+  });
+  $('#login').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-login]'); if (!b) return;
+    var a = b.getAttribute('data-login');
+    if (a === 'forgot') openReset(false);
+    else if (a === 'rc-copy') { try { navigator.clipboard.writeText($('#rc-list').textContent).then(function () { toast('Đã sao chép'); }); } catch (x) {} }
+    else if (a === 'rc-done') { $('#rc-list').textContent = ''; load(); }
+    else if (a === 'back') { $('#lg-ok').textContent = ''; loginStep('login-form'); }
+    else if (a === 'resend') sendLogin().then(function () { toast('Đã gửi mã mới'); }).catch(function (err) { $('#otp-err').textContent = err.message; });
+    else if (a === 'send-reset') {
+      b.disabled = true;
+      api('forgot', { name: $('#lg-name').value }).then(function (r) {
+        resetChallenge = r.challenge; $('#rs-totp-f').classList.toggle('hidden', !r.needTotp); $('#rs-step1').classList.add('hidden'); $('#rs-step2').classList.remove('hidden'); $('#rs-code').focus();
+      }).catch(function (err) { $('#rs-err').textContent = err.message; }).finally(function () { b.disabled = false; });
+    }
   });
   try { $('#lg-name').value = localStorage.getItem('mdf-admin-name') || ''; } catch (x) {}
+
+  // Ask for an emailed code, then run the action with it. Wrong codes keep the dialog open.
+  function withCode(purpose, title, run) {
+    return api('otp', { purpose: purpose }).then(function (r) {
+      var bg = document.createElement('div'); bg.className = 'otp-bg';
+      bg.innerHTML = '<form class="otp-box" role="dialog" aria-modal="true" aria-labelledby="otp-t"><h2 id="otp-t">' + esc(title) + '</h2>' +
+        '<p>Nhập mã 6 số vừa gửi tới <b>' + esc(r.email) + '</b>. Mã có hiệu lực 10 phút.</p>' +
+        '<input class="i otp-in" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required aria-label="Mã xác thực">' +
+        '<div class="err" role="alert"></div><div class="row"><button class="btn" type="button" data-x>Huỷ</button><button class="btn primary" type="submit">Xác nhận</button></div></form>';
+      document.body.appendChild(bg);
+      var f = bg.querySelector('form'), inp = f.querySelector('input'), er = f.querySelector('.err');
+      inp.focus();
+      bg.querySelector('[data-x]').addEventListener('click', function () { bg.remove(); });
+      f.addEventListener('submit', function (e) {
+        e.preventDefault(); er.textContent = '';
+        run(r.challenge, inp.value).then(function () { bg.remove(); }).catch(function (err) { er.textContent = err.message; if (/hết hạn|quá 5/.test(err.message)) setTimeout(function () { bg.remove(); }, 1800); });
+      });
+    }).catch(function (e) { toast(e.message, true); });
+  }
   $('#logout').addEventListener('click', function () { api('logout', {}).finally(showLogin); });
 
   function load() {
@@ -385,7 +530,17 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       '<input type="hidden" id="s-reply" value="' + esc(s.replyTo) + '">' +
       '<p class="hint">Kênh gửi hiện tại: <b>' + esc(D.mailProvider) + '</b>. Email gửi từ địa chỉ trong MAIL_FROM; Sendify chỉ nhận email giao dịch, không cho nội dung quảng cáo.</p>' +
       '<div class="row2"><input class="i" type="email" id="s-test" placeholder="email nhận thử"><button class="btn" type="button" data-act="test-email">Gửi email thử</button></div></section>';
-    h += '<div style="grid-column:1/-1"><button class="btn primary" type="submit">Lưu cài đặt</button></div></form>';
+    h += '<div style="grid-column:1/-1"><button class="btn primary" type="submit">Lưu cài đặt</button> <span class="hint">Cần mã xác thực gửi tới email quản trị.</span></div></form>';
+    h += '<form id="pw-form" class="set-grid" autocomplete="off"><section class="panel"><h2>Bảo mật tài khoản</h2>' +
+      '<p class="hint">Tài khoản quản trị gắn với email marcom@matbao.com. Đăng nhập, đổi mật khẩu và lưu cài đặt đều cần mã gửi tới email này. Đổi mật khẩu sẽ đăng xuất mọi phiên khác.</p>' +
+      '<label class="f">Mật khẩu hiện tại<input class="i" type="password" id="pw-cur" autocomplete="current-password" required></label>' +
+      '<label class="f">Mật khẩu mới<input class="i" type="password" id="pw-new" autocomplete="new-password" minlength="12" required></label>' +
+      '<label class="f">Nhập lại mật khẩu mới<input class="i" type="password" id="pw-new2" autocomplete="new-password" required></label>' +
+      '<p class="hint">Ít nhất 12 ký tự, có chữ thường, chữ hoa và số.</p><div><button class="btn primary" type="submit">Đổi mật khẩu</button></div></section>' +
+      '<section class="panel"><h2>Ứng dụng Authenticator</h2>' +
+      '<p class="hint">Bắt buộc khi đăng nhập. Gắn lúc ' + dt(D.security.totpAt) + '. Còn <b>' + D.security.recoveryLeft + '</b>/10 mã khôi phục.</p>' +
+      '<p class="hint">Đổi điện thoại hoặc hết mã khôi phục: gỡ ứng dụng hiện tại (cần mật khẩu + mã gửi tới ' + esc(D.security.email) + '). Mọi phiên sẽ đăng xuất; lần đăng nhập sau sẽ quét QR mới và nhận 10 mã khôi phục mới.</p>' +
+      '<div><button class="btn bad" type="button" data-act="totp-reset">Gỡ Authenticator và gắn lại</button></div></section></form>';
     return h;
   }
 
@@ -468,6 +623,24 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       o.textContent = !st ? '' : (n ? 'Giá early bird áp dụng đến hết ' + dt(ebUntil(st, n)) + '.' : 'Không áp dụng early bird.');
     }
     if (f) { ['#s-start', '#s-ebdays'].forEach(function (q) { var el = $(q); if (el) el.addEventListener('input', ebOut); }); ebOut(); }
+    var tr = c.querySelector('[data-act="totp-reset"]');
+    if (tr) tr.addEventListener('click', function () {
+      var cur = $('#pw-cur').value;
+      if (!cur) { toast('Nhập mật khẩu hiện tại ở ô phía trên trước.', true); $('#pw-cur').focus(); return; }
+      if (!confirm('Gỡ Authenticator hiện tại? Mọi phiên sẽ đăng xuất và bạn phải quét QR mới khi đăng nhập.')) return;
+      withCode('totp-reset', 'Xác nhận gỡ Authenticator', function (challenge, code) {
+        return api('totp-reset', { challenge: challenge, code: code, current: cur }).then(function () { toast('Đã gỡ. Vui lòng đăng nhập lại để gắn điện thoại mới.'); showLogin(); });
+      });
+    });
+    var pf = c.querySelector('#pw-form');
+    if (pf) pf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if ($('#pw-new').value !== $('#pw-new2').value) return toast('Hai mật khẩu mới không khớp.', true);
+      var body = { current: $('#pw-cur').value, password: $('#pw-new').value };
+      withCode('password', 'Xác nhận đổi mật khẩu', function (challenge, code) {
+        return api('password', Object.assign({ challenge: challenge, code: code }, body)).then(function () { pf.reset(); toast('Đã đổi mật khẩu'); });
+      });
+    });
     if (f) f.addEventListener('submit', function (e) {
       e.preventDefault();
       var plans = {}; PLANS.forEach(function (k) { plans[k] = {}; });
@@ -478,7 +651,9 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
         teamEmails: $('#s-team').value.split(/[\s,;]+/).filter(Boolean), replyTo: $('#s-reply').value
       };
       if (new Date(body.program.endAt) <= new Date(body.program.startAt)) return toast('Ngày đóng phải sau ngày mở.', true);
-      api('settings', body).then(function () { toast('Đã lưu cài đặt'); load(); }).catch(function (e) { toast(e.message, true); });
+      withCode('settings', 'Xác nhận lưu cài đặt', function (challenge, code) {
+        return api('settings', Object.assign({ challenge: challenge, code: code }, body)).then(function () { toast('Đã lưu cài đặt'); load(); });
+      });
     });
   }
 

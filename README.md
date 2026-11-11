@@ -18,7 +18,7 @@ Opening `index.html` directly as a file still works, but then the form stays in 
 | Variable | Purpose |
 |---|---|
 | `PORT`, `PUBLIC_URL` | Port and the public address used in email links (e.g. `https://mdf.matbao.net`) |
-| `ADMIN_PASSWORD` | Dashboard password (each person signs in with their own name for the activity log) |
+| `ADMIN_EMAIL` | Mailbox that receives dashboard verification codes (default `marcom@matbao.com`) |
 | `SESSION_SECRET` | Random string used to sign dashboard sessions |
 | `MAIL_PROVIDER` | `outbox` (save emails to `data/outbox/`, nothing is sent), `smtp` or `sendify` |
 | `SENDIFY_API_URL`, `SENDIFY_API_KEY` | Sendify Email API (`https://sendify.vn/api/emails`, Bearer key) |
@@ -45,3 +45,13 @@ duplicate-request reuse, and a cap on active packages per email domain.
 - `js/mdf-api.js` – connects the page to the server (live slots, dates, registration)
 - `admin/index.html` – dashboard
 - `server/` – `server.js` (HTTP + API), `store.js` (JSON store), `mailer.js` (email transports), `emails.js` (templates)
+
+
+## Dashboard security
+
+- One account, tied to `ADMIN_EMAIL`. The password is stored hashed (scrypt) in `data/db.json`, never in env or git.
+- **Sign-in:** password, then a code from an Authenticator app (mandatory). The first sign-in links the app by scanning a QR code and also needs a code emailed to `ADMIN_EMAIL`; it then shows 10 one-time recovery codes.
+- **Forgot password:** code emailed to `ADMIN_EMAIL` + Authenticator (or a recovery code).
+- **Change password, save settings, remove the Authenticator:** code emailed to `ADMIN_EMAIL` (changing the password or removing the app signs everyone out).
+- **First deploy:** open `/admin/`, choose "Đặt mật khẩu lần đầu", get the emailed code, set a password, then sign in and link the app.
+- **Locked out (phone and recovery codes lost):** someone with server access removes the `totp` field from `auth` in `data/db.json` and restarts; the next sign-in links a new phone.

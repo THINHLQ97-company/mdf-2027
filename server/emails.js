@@ -25,6 +25,7 @@ function createEmails(siteRoot, baseUrl, assetUrl) {
   const PLAN_TXT = { silver: '#e3e7f0', gold: '#ffe770', diamond: '#add2f4' };
   const FONT = "'Poppins','Segoe UI',Arial,Helvetica,sans-serif";
 
+  const ADMIN_EMAIL = 'marcom@matbao.com';
   function layout(title, bodyHtml, preheader) {
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"><title>${esc(title)}</title>
@@ -127,6 +128,20 @@ ${regs.length > 1 ? `<tr><td colspan="2" style="${cell}border-top:1px solid ${C.
 
   return {
     obligationHtml, obligationLink, layout,
+
+    // One-time code for the dashboard. The code is in the body only, never in the subject or logs.
+    adminOtp(code, purpose, ip, to) {
+      const what = { login: 'sign in to the MDF 2027 dashboard', enroll: 'link an Authenticator app to the MDF 2027 dashboard', 'totp-reset': 'remove the Authenticator app from the dashboard', reset: 'reset the dashboard password', password: 'change the dashboard password', settings: 'save changes to the programme settings' }[purpose] || 'confirm a dashboard action';
+      return {
+        tag: 'admin-otp', to: [to || ADMIN_EMAIL],
+        subject: 'MDF 2027 dashboard: your verification code',
+        html: layout('Verification code', eyebrow('Dashboard security') + h1('Your verification code') +
+          p(`Use this code to ${what}. It expires in 10 minutes and works once.`) +
+          `<div style="margin:6px 0 20px;padding:16px 0;text-align:center;font:700 34px/40px ${FONT};letter-spacing:10px;color:${C.ink};background:${C.panel};border:1px solid ${C.line};border-radius:12px;">${code}</div>` +
+          p(`Requested from IP ${esc(ip || 'unknown')}. If this wasn't you, do not share the code. Change the dashboard password and check the activity log.`)),
+        text: `Your MDF 2027 dashboard verification code: ${code}\nUse it to ${what}. It expires in 10 minutes.\nRequested from IP ${ip || 'unknown'}. If this wasn't you, do not share the code.`
+      };
+    },
 
     verifyGroup(regs, s) {
       if (regs.length === 1) return this.verify(regs[0], s);

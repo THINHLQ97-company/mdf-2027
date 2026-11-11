@@ -24,12 +24,15 @@ const env = process.env;
 const PORT = Number(env.PORT || 8000);
 const BASE_URL = (env.PUBLIC_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
 const DATA_DIR = path.resolve(ROOT, env.DATA_DIR || 'data');
-let ADMIN_PASSWORD = env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) { ADMIN_PASSWORD = crypto.randomBytes(9).toString('base64url'); console.warn('ADMIN_PASSWORD not set. Temporary password:', ADMIN_PASSWORD); }
-const SESSION_SECRET = env.SESSION_SECRET || crypto.createHash('sha256').update('mdf2027:' + ADMIN_PASSWORD).digest('hex');
+// One dashboard account, tied to the Marcom mailbox: every sign-in, password reset/change and settings change needs a code sent there.
+const ADMIN_EMAIL = (env.ADMIN_EMAIL || 'marcom@matbao.com').toLowerCase();
 
 const store = createStore(path.join(DATA_DIR, 'db.json'));
 const db = store.db;
+// Account record lives in the data file (never in the repo or env). No password until one is set through "Forgot password".
+db.auth = db.auth || {};
+if (!db.auth.secret) { db.auth.secret = crypto.randomBytes(32).toString('hex'); store.save(); }
+const SESSION_SECRET = env.SESSION_SECRET || db.auth.secret;
 const mailer = createMailer(env, path.join(DATA_DIR, 'outbox'));
 const emails = createEmails(ROOT, BASE_URL, env.EMAIL_ASSET_URL);
 
@@ -125,7 +128,7 @@ function readJson(req) {
 
 /* ── admin session (signed cookie) ── */
 function sign(v) { return crypto.createHmac('sha256', SESSION_SECRET).update(v).digest('base64url'); }
-function makeSession(name) { const v = Buffer.from(JSON.stringify({ n: name, e: now() + 12 * 3600e3 })).toString('base64url'); return v + '.' + sign(v); }
+function makeSession(name) { const v = Buffer.from(JSON.stringify({ n: name, a: db.auth.version || 0, e: now() + 12 * 3600e3 })).toString('base64url'); return v + '.' + sign(v); }
 function readSession(req) {
   const m = String(req.headers.cookie || '').match(/(?:^|;\s*)mdf_admin=([^;]+)/);
   if (!m) return null;
@@ -133,9 +136,100 @@ function readSession(req) {
   if (!v || !sig) return null;
   const expected = sign(v);
   if (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
-  try { const s = JSON.parse(Buffer.from(v, 'base64url').toString()); return s.e > now() ? s : null; } catch (e) { return null; }
+  try { const s = JSON.parse(Buffer.from(v, 'base64url').toString()); return s.e > now() && db.auth.hash && db.auth.totp && s.a === (db.auth.version || 0) ? s : null; } catch (e) { return null; }
 }
 const cookieFlags = BASE_URL.startsWith('https') ? '; Secure' : '';
+
+/* ── dashboard account: scrypt password + one-time codes by email ── */
+function hashPassword(pw, salt) { return crypto.scryptSync(pw, salt, 64, { N: 16384, r: 8, p: 1 }).toString('hex'); }
+function checkPassword(pw) {
+  if (!db.auth.hash) return false;
+  const a = Buffer.from(hashPassword(String(pw || ''), db.auth.salt), 'hex'), b = Buffer.from(db.auth.hash, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+function passwordProblem(pw) {
+  pw = String(pw || '');
+  if (pw.length < 12) return 'Mật khẩu cần ít nhất 12 ký tự.';
+  if (pw.length > 128) return 'Mật khẩu quá dài.';
+  if (!/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw)) return 'Mật khẩu cần có chữ thường, chữ hoa và số.';
+  if (pw.toLowerCase().includes('mdf') || pw.toLowerCase().includes('matbao')) return 'Mật khẩu không được chứa "mdf" hoặc "matbao".';
+  return '';
+}
+function setPassword(pw, by) {
+  db.auth.salt = crypto.randomBytes(16).toString('hex');
+  db.auth.hash = hashPassword(pw, db.auth.salt);
+  db.auth.version = (db.auth.version || 0) + 1;   // signs out every existing session
+  db.auth.passwordSetAt = iso(now());
+  store.audit('password set', null, by);
+  store.save();
+}
+// Codes are kept in memory only, hashed, 10 minutes, 5 tries, one use.
+const challenges = new Map();
+const codeHash = (id, code) => crypto.createHmac('sha256', SESSION_SECRET).update(id + ':' + code).digest('hex');
+async function sendCode(purpose, req, data) {
+  const ip = clientIp(req);
+  if (limited('otp:' + purpose + ':' + ip, 5, 900e3) || limited('otp-all', 30, 3600e3)) throw Object.assign(new Error('Đã gửi quá nhiều mã. Vui lòng đợi 15 phút.'), { status: 429 });
+  const id = crypto.randomBytes(16).toString('base64url');
+  const code = String(crypto.randomInt(0, 1e6)).padStart(6, '0');
+  for (const [k, c] of challenges) if (c.exp < now() || (c.purpose === purpose && c.sid && data && c.sid === data.sid)) challenges.delete(k);
+  challenges.set(id, Object.assign({ purpose, hash: codeHash(id, code), exp: now() + 600e3, tries: 0 }, data || {}));
+  const ok = await sendMail(emails.adminOtp(code, purpose, ip, ADMIN_EMAIL));
+  if (!ok) { challenges.delete(id); throw Object.assign(new Error('Không gửi được email chứa mã. Thử lại sau.'), { status: 502 }); }
+  store.audit('code sent', null, (data && data.name) || 'system', purpose);
+  return id;
+}
+function useCode(id, code, purpose) {
+  const c = challenges.get(String(id || ''));
+  if (!c || c.purpose !== purpose || c.exp < now()) { challenges.delete(String(id || '')); return { error: 'Mã đã hết hạn. Vui lòng gửi lại mã mới.' }; }
+  const a = Buffer.from(codeHash(id, String(code || '').replace(/\D/g, ''))), b = Buffer.from(c.hash);
+  if (!crypto.timingSafeEqual(a, b)) {
+    if (++c.tries >= 5) { challenges.delete(id); return { error: 'Sai mã quá 5 lần. Vui lòng gửi lại mã mới.' }; }
+    return { error: 'Mã không đúng. Còn ' + (5 - c.tries) + ' lần thử.' };
+  }
+  challenges.delete(id);
+  return { ok: true, c };
+}
+/* ── Authenticator (TOTP, RFC 6238: SHA-1, 30 s, 6 digits) ── */
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32encode(buf) { let bits = '', out = ''; for (const b of buf) bits += b.toString(2).padStart(8, '0'); for (let i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5).padEnd(5, '0'), 2)]; return out; }
+function b32decode(str) { let bits = ''; for (const ch of str.replace(/=+$/, '').toUpperCase()) { const v = B32.indexOf(ch); if (v < 0) continue; bits += v.toString(2).padStart(5, '0'); } const out = []; for (let i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.slice(i, i + 8), 2)); return Buffer.from(out); }
+function totpAt(secret, counter) {
+  const msg = Buffer.alloc(8); msg.writeBigUInt64BE(BigInt(counter));
+  const h = crypto.createHmac('sha1', b32decode(secret)).update(msg).digest();
+  const o = h[h.length - 1] & 15;
+  return String(((h.readUInt32BE(o) & 0x7fffffff) % 1e6)).padStart(6, '0');
+}
+// Accepts the current 30-second step ±1; a step can be used once (no replay).
+function totpCheck(secret, code, lastStep) {
+  code = String(code || '').replace(/\D/g, '');
+  if (code.length !== 6) return 0;
+  const step = Math.floor(now() / 30000);
+  for (const d of [0, -1, 1]) {
+    const c = step + d;
+    if (c > (lastStep || 0) && crypto.timingSafeEqual(Buffer.from(totpAt(secret, c)), Buffer.from(code))) return c;
+  }
+  return 0;
+}
+const recoveryHash = (c) => crypto.createHash('sha256').update(String(c).toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
+function newRecoveryCodes() {
+  const codes = Array.from({ length: 10 }, () => { const x = b32encode(crypto.randomBytes(5)); return x.slice(0, 4) + '-' + x.slice(4, 8); });
+  db.auth.recovery = codes.map(recoveryHash);
+  return codes;
+}
+// Second factor at sign-in: an Authenticator code, or a one-time recovery code.
+function secondFactor(code) {
+  const raw = String(code || '').trim();
+  if (/^\d{6}$/.test(raw.replace(/\s/g, ''))) {
+    const step = totpCheck(db.auth.totp, raw, db.auth.totpStep);
+    if (step) { db.auth.totpStep = step; store.save(); return 'totp'; }
+    return '';
+  }
+  const h = recoveryHash(raw), i = (db.auth.recovery || []).indexOf(h);
+  if (i < 0) return '';
+  db.auth.recovery.splice(i, 1); store.save();
+  return 'recovery';
+}
+const maskEmail = (e) => e.replace(/^(.)(.*)(@.*)$/, (m, a, b, c) => a + '•'.repeat(Math.min(6, b.length)) + c);
 
 /* ── public API ── */
 function publicStatus() {
@@ -359,31 +453,116 @@ function csv() {
 
 async function admin(req, res, url) {
   const p = url.pathname;
+  const sessCookie = (v) => ({ 'Set-Cookie': `mdf_admin=${v}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=${v ? 43200 : 0}${cookieFlags}` });
+  if (req.method === 'POST' && req.headers['x-mdf-admin'] !== '1') return send(res, 403, { error: 'Missing header.' });
+  if (p === '/admin/api/account' && req.method === 'GET') return send(res, 200, { email: maskEmail(ADMIN_EMAIL), hasPassword: !!db.auth.hash, hasTotp: !!db.auth.totp });
+  // Sign-in: password, then the Authenticator app (mandatory). First sign-in links the app, which also needs a code from the Marcom mailbox.
   if (p === '/admin/api/login' && req.method === 'POST') {
-    if (limited('login:' + clientIp(req), 10, 900e3)) return send(res, 429, { error: 'Too many attempts. Wait 15 minutes.' });
+    if (limited('login:' + clientIp(req), 10, 900e3)) return send(res, 429, { error: 'Sai quá nhiều lần. Vui lòng đợi 15 phút.' });
     const b = await readJson(req);
     const name = String(b.name || '').trim().slice(0, 40);
-    const a = Buffer.from(String(b.password || '')), e = Buffer.from(ADMIN_PASSWORD);
-    if (!name || a.length !== e.length || !crypto.timingSafeEqual(a, e)) return send(res, 401, { error: 'Wrong name or password.' });
-    store.audit('login', null, name);
-    return send(res, 200, { ok: true, name }, { 'Set-Cookie': `mdf_admin=${makeSession(name)}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=43200${cookieFlags}` });
+    if (!db.auth.hash) return send(res, 409, { error: 'Chưa đặt mật khẩu. Bấm "Quên / đặt mật khẩu" để nhận mã qua email.' });
+    if (!name || !checkPassword(b.password)) { store.audit('login failed', null, name || '?', clientIp(req)); return send(res, 401, { error: 'Sai tên hoặc mật khẩu.' }); }
+    if (db.auth.totp) {
+      const id = crypto.randomBytes(16).toString('base64url');
+      challenges.set(id, { purpose: 'login-totp', name, exp: now() + 300e3, tries: 0 });
+      return send(res, 200, { step: 'totp', challenge: id });
+    }
+    const secret = b32encode(crypto.randomBytes(20));
+    const challenge = await sendCode('enroll', req, { name, secret });
+    const label = encodeURIComponent('Mat Bao MDF 2027:' + ADMIN_EMAIL);
+    return send(res, 200, { step: 'enroll', challenge, email: maskEmail(ADMIN_EMAIL), secret, otpauth: `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent('Mat Bao MDF 2027')}&algorithm=SHA1&digits=6&period=30` });
+  }
+  if (p === '/admin/api/login/verify' && req.method === 'POST') {
+    if (limited('otpv:' + clientIp(req), 20, 900e3)) return send(res, 429, { error: 'Thử quá nhiều lần. Vui lòng đợi 15 phút.' });
+    const b = await readJson(req);
+    const c = challenges.get(String(b.challenge || ''));
+    if (!c || c.purpose !== 'login-totp' || c.exp < now() || !db.auth.totp) { challenges.delete(String(b.challenge || '')); return send(res, 401, { error: 'Phiên đăng nhập đã hết hạn. Vui lòng nhập lại mật khẩu.', restart: true }); }
+    const how = secondFactor(b.code);
+    if (!how) {
+      if (++c.tries >= 5) { challenges.delete(b.challenge); store.audit('login failed', null, c.name, '2FA'); return send(res, 401, { error: 'Sai mã quá 5 lần. Vui lòng nhập lại mật khẩu.', restart: true }); }
+      return send(res, 401, { error: 'Mã Authenticator không đúng. Còn ' + (5 - c.tries) + ' lần thử.' });
+    }
+    challenges.delete(b.challenge);
+    store.audit('login', null, c.name, how === 'recovery' ? 'mã khôi phục · còn ' + db.auth.recovery.length : clientIp(req));
+    return send(res, 200, { ok: true, name: c.name, recoveryLeft: db.auth.recovery.length }, sessCookie(makeSession(c.name)));
+  }
+  if (p === '/admin/api/login/enroll' && req.method === 'POST') {
+    if (limited('otpv:' + clientIp(req), 20, 900e3)) return send(res, 429, { error: 'Thử quá nhiều lần. Vui lòng đợi 15 phút.' });
+    const b = await readJson(req);
+    const pending = challenges.get(String(b.challenge || ''));
+    if (!pending || pending.purpose !== 'enroll' || !pending.secret) return send(res, 401, { error: 'Phiên đã hết hạn. Vui lòng đăng nhập lại.', restart: true });
+    const step = totpCheck(pending.secret, b.totp, 0);
+    if (!step) return send(res, 401, { error: 'Mã Authenticator không đúng. Kiểm tra giờ trên điện thoại rồi thử lại.' });
+    const r = useCode(b.challenge, b.code, 'enroll');
+    if (r.error) return send(res, 401, { error: r.error, restart: /hết hạn|quá 5/.test(r.error) });
+    db.auth.totp = r.c.secret; db.auth.totpStep = step; db.auth.totpAt = iso(now());
+    const codes = newRecoveryCodes(); store.save();
+    store.audit('authenticator linked', null, r.c.name);
+    return send(res, 200, { ok: true, name: r.c.name, recoveryCodes: codes }, sessCookie(makeSession(r.c.name)));
+  }
+  // Forgot password: code from the Marcom mailbox + the Authenticator (or a recovery code) once the app is linked.
+  if (p === '/admin/api/forgot' && req.method === 'POST') {
+    const b = await readJson(req);
+    return send(res, 200, { challenge: await sendCode('reset', req, { name: String(b.name || '').trim().slice(0, 40) || 'reset' }), email: maskEmail(ADMIN_EMAIL), needTotp: !!db.auth.totp });
+  }
+  if (p === '/admin/api/forgot/reset' && req.method === 'POST') {
+    if (limited('otpv:' + clientIp(req), 20, 900e3)) return send(res, 429, { error: 'Thử quá nhiều lần. Vui lòng đợi 15 phút.' });
+    const b = await readJson(req);
+    const bad = passwordProblem(b.password);
+    if (bad) return send(res, 400, { error: bad });
+    if (db.auth.totp && !secondFactor(b.totp)) return send(res, 401, { error: 'Mã Authenticator (hoặc mã khôi phục) không đúng.' });
+    const r = useCode(b.challenge, b.code, 'reset');
+    if (r.error) return send(res, 401, { error: r.error });
+    setPassword(String(b.password), r.c.name + ' (quên mật khẩu)');
+    return send(res, 200, { ok: true });
   }
   const sess = readSession(req);
   if (!sess) return send(res, 401, { error: 'Please sign in.' });
   // CSRF: SameSite=Strict cookie plus a custom header that cross-site forms cannot set.
-  if (req.method !== 'GET' && req.headers['x-mdf-admin'] !== '1') return send(res, 403, { error: 'Missing header.' });
   const who = sess.n;
-  if (p === '/admin/api/logout') return send(res, 200, { ok: true }, { 'Set-Cookie': `mdf_admin=; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=0${cookieFlags}` });
+  if (p === '/admin/api/logout') return send(res, 200, { ok: true }, sessCookie(''));
+  // Sensitive actions: ask for a code first, then send it with the change.
+  if (p === '/admin/api/otp' && req.method === 'POST') {
+    const b = await readJson(req);
+    if (!['password', 'settings', 'totp-reset'].includes(b.purpose)) return send(res, 400, { error: 'Unknown action.' });
+    return send(res, 200, { challenge: await sendCode(b.purpose, req, { name: who }), email: maskEmail(ADMIN_EMAIL) });
+  }
+  if (p === '/admin/api/password' && req.method === 'POST') {
+    const b = await readJson(req);
+    if (!checkPassword(b.current)) return send(res, 401, { error: 'Mật khẩu hiện tại không đúng.', keep: true });
+    const bad = passwordProblem(b.password);
+    if (bad) return send(res, 400, { error: bad, keep: true });
+    const r = useCode(b.challenge, b.code, 'password');
+    if (r.error) return send(res, 401, { error: r.error, keep: true });
+    setPassword(String(b.password), who);
+    return send(res, 200, { ok: true }, sessCookie(makeSession(who)));
+  }
   if (p === '/admin/api/data' && req.method === 'GET') {
     return send(res, 200, {
-      me: who, mailProvider: mailer.provider, baseUrl: BASE_URL, status: publicStatus(), settings: db.settings, stats: stats(),
+      me: who, security: { email: ADMIN_EMAIL, totpAt: db.auth.totpAt || null, recoveryLeft: (db.auth.recovery || []).length, passwordSetAt: db.auth.passwordSetAt || null }, mailProvider: mailer.provider, baseUrl: BASE_URL, status: publicStatus(), settings: db.settings, stats: stats(),
       registrations: db.registrations.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(publicReg),
       audit: db.audit.slice(0, 200), mailLog: db.mailLog.slice(0, 200)
     });
   }
   const m = p.match(/^\/admin\/api\/reg\/([\w-]+)$/);
   if (m && req.method === 'POST') return adminAction(req, res, m[1], who);
-  if (p === '/admin/api/settings' && req.method === 'POST') { updateSettings(await readJson(req), who); return send(res, 200, { ok: true, settings: db.settings }); }
+  // New phone: unlink the app (password + mailbox code). Everyone is signed out and the next sign-in links the new phone.
+  if (p === '/admin/api/totp-reset' && req.method === 'POST') {
+    const b = await readJson(req);
+    if (!checkPassword(b.current)) return send(res, 401, { error: 'Mật khẩu hiện tại không đúng.', keep: true });
+    const r = useCode(b.challenge, b.code, 'totp-reset');
+    if (r.error) return send(res, 401, { error: r.error, keep: true });
+    delete db.auth.totp; delete db.auth.totpStep; db.auth.recovery = []; db.auth.version = (db.auth.version || 0) + 1; store.save();
+    store.audit('authenticator removed', null, who);
+    return send(res, 200, { ok: true }, sessCookie(''));
+  }
+  if (p === '/admin/api/settings' && req.method === 'POST') {
+    const b = await readJson(req);
+    const r = useCode(b.challenge, b.code, 'settings');
+    if (r.error) return send(res, 401, { error: r.error, keep: true });
+    updateSettings(b, who); return send(res, 200, { ok: true, settings: db.settings });
+  }
   if (p === '/admin/api/export.csv' && req.method === 'GET') return send(res, 200, csv(), { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="mdf-2027-registrations.csv"' });
   if (p === '/admin/api/test-email' && req.method === 'POST') {
     const b = await readJson(req);
