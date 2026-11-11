@@ -193,29 +193,32 @@
     });
   }
 
-  /* ───────────── Book your plan: Plan → Details → Review & reserve ─────────────
-     State lives in `bk`. A draft is kept in localStorage so a half-filled form survives a reload.
-     submitRegistration() is the hand-off point for the backend / Sendify flow (part 3). */
+  /* ───────────── Book your plan: TLDs & plans → Details → Review & reserve ─────────────
+     A registry can book several TLDs; each TLD takes its own package (and its own slot).
+     State lives in `bk`. A draft is kept in localStorage so a half-filled form survives a reload. */
   var HOLD_HOURS = 48;
-  var DRAFT_KEY = 'mdf2027-booking-draft';
+  var MAX_LINES = 5;
+  var DRAFT_KEY = 'mdf2027-booking-draft-v2';
   var formStartedAt = Date.now();
   var BK_STEPS = ['plan', 'details', 'review'];
   var bk = {
     step: 0, done: null, errors: {},
-    plan: '', billing: 'annual',
-    registry: '', tlds: '', contactName: '', jobTitle: '', email: '', phone: '', participated: '', notes: '', consent: false
+    lines: [{ tld: '', plan: '' }], billing: 'annual',
+    registry: '', contactName: '', jobTitle: '', email: '', phone: '', participated: '', notes: '', consent: false
   };
-  var BK_FIELDS = ['plan', 'billing', 'registry', 'tlds', 'contactName', 'jobTitle', 'email', 'phone', 'participated', 'notes'];
+  var BK_FIELDS = ['billing', 'registry', 'contactName', 'jobTitle', 'email', 'phone', 'participated', 'notes'];
 
   function loadDraft() {
     try {
       var d = JSON.parse(window.localStorage.getItem(DRAFT_KEY) || 'null');
-      if (d) BK_FIELDS.forEach(function (k) { if (typeof d[k] === 'string') bk[k] = d[k]; });
+      if (!d) return;
+      BK_FIELDS.forEach(function (k) { if (typeof d[k] === 'string') bk[k] = d[k]; });
+      if (Array.isArray(d.lines) && d.lines.length) bk.lines = d.lines.slice(0, MAX_LINES).map(function (l) { return { tld: String(l.tld || ''), plan: String(l.plan || '') }; });
     } catch (e) { /* storage blocked: start empty */ }
   }
   function saveDraft() {
     try {
-      var d = {}; BK_FIELDS.forEach(function (k) { d[k] = bk[k]; });
+      var d = { lines: bk.lines }; BK_FIELDS.forEach(function (k) { d[k] = bk[k]; });
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
     } catch (e) { /* ignore */ }
   }
@@ -227,31 +230,42 @@
     return s + (p.onHold ? ' · ' + p.onHold + ' on hold' : '');
   }
   function planOf(key) { return PACKAGES.filter(function (p) { return p.key === key; })[0]; }
-  function parseTlds(s) {
-    return String(s).split(/[\s,;]+/).map(function (x) { x = x.trim().toLowerCase(); return x ? (x.charAt(0) === '.' ? x : '.' + x) : ''; })
-      .filter(function (x, i, arr) { return x && arr.indexOf(x) === i; });
-  }
-  function quote() {
-    var p = planOf(bk.plan);
-    if (!p) return null;
+  function normTld(x) { x = String(x || '').trim().toLowerCase(); return x ? (x.charAt(0) === '.' ? x : '.' + x) : ''; }
+  function validTld(x) { return /^\.[\p{L}\p{N}-]{2,63}$/u.test(x); }
+  function lineTlds() { return bk.lines.map(function (l) { return normTld(l.tld); }).filter(Boolean); }
+  function priceLine(p) { var half = bk.billing === 'half'; return half ? p.half : priceOf(p); }
+  // Priced lines, in order, flagging those that would go to the waitlist because the cart takes more slots than are free.
+  function cart() {
+    var used = {}, out = [], total = 0;
+    bk.lines.forEach(function (l, i) {
+      var p = planOf(l.plan); if (!p) return;
+      used[p.key] = (used[p.key] || 0) + 1;
+      var amount = priceLine(p); total += amount;
+      out.push({ i: i, tld: normTld(l.tld), plan: p, amount: amount, waitlist: used[p.key] > Math.max(0, p.slots) });
+    });
     var half = bk.billing === 'half';
-    return { plan: p, amount: half ? p.half : priceOf(p), unit: half ? '/half-year' : '/year', early: !half && isEarlyBird() };
+    return { lines: out, total: total, unit: half ? '/half-year' : '/year', early: !half && isEarlyBird() };
   }
 
   function validate(step) {
     var e = {};
     if (step === 0) {
-      if (!bk.plan) e.plan = 'Choose a package to continue.';
+      var seen = {};
+      bk.lines.forEach(function (l, i) {
+        var t = normTld(l.tld);
+        if (!t) e['tld' + i] = 'Enter the TLD, for example .cloud';
+        else if (!validTld(t)) e['tld' + i] = 'Check the TLD format, for example .cloud';
+        else if (seen[t]) e['tld' + i] = 'This TLD is already in your list.';
+        seen[t] = 1;
+        if (!planOf(l.plan)) e['plan' + i] = 'Choose a package for this TLD.';
+      });
     } else if (step === 1) {
       if (!bk.registry.trim()) e.registry = 'Enter your registry or company name.';
-      var t = parseTlds(bk.tlds);
-      if (!t.length) e.tlds = 'Enter at least one TLD, for example .cloud';
-      else if (t.some(function (x) { return !/^\.[\p{L}\p{N}-]{2,63}$/u.test(x); })) e.tlds = 'Check the TLD format, for example .cloud, .asia';
       if (!bk.contactName.trim()) e.contactName = 'Enter the name of the person we should contact.';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(bk.email.trim())) e.email = 'Enter a valid work email, for example name@registry.com';
       if (!bk.participated) e.participated = 'Let us know if you joined in 2026.';
     } else if (step === 2) {
-      if (!bk.consent) e.consent = 'Please confirm to reserve your slot.';
+      if (!bk.consent) e.consent = 'Please confirm to reserve your slots.';
     }
     bk.errors = e;
     return !Object.keys(e).length;
@@ -270,7 +284,7 @@
   function renderSteps() {
     return '<ol class="bk-steps">' + BK_STEPS.map(function (k, i) {
       var cls = i === bk.step ? 'active' : (i < bk.step ? 'done' : '');
-      var label = { plan: 'Choose plan', details: 'Your details', review: 'Review & reserve' }[k];
+      var label = { plan: 'TLDs & plans', details: 'Your details', review: 'Review & reserve' }[k];
       return '<li class="' + cls + '">' + (i < bk.step ? '<button type="button" data-bk-go="' + i + '"><i>✓</i>' + label + '</button>' : '<span><i>' + (i + 1) + '</i>' + label + '</span>') + '</li>';
     }).join('') + '</ol>';
   }
@@ -281,28 +295,36 @@
         (PROGRAM.state === 'upcoming' ? 'Bookings for MDF 2027 open on <b>' + esc(fmtDate(PROGRAM.startAt)) + '</b>.' : 'MDF 2027 bookings closed on <b>' + esc(fmtDate(PROGRAM.endAt)) + '</b>.') +
         ' Questions? Email marcom@matbao.com.</p></div>';
     }
-    var h = '<div class="bk-plans" role="radiogroup" aria-label="Package">' + PACKAGES.map(function (p) {
-      var full = p.slots <= 0;
-      return '<label class="bk-plan ' + p.key + (bk.plan === p.key ? ' sel' : '') + (full ? ' full' : '') + '" for="bk-plan-' + p.key + '">' +
-        '<input type="radio" name="bk-plan" id="bk-plan-' + p.key + '" value="' + p.key + '"' + (bk.plan === p.key ? ' checked' : '') + '>' +
-        '<span class="nm">' + p.key.toUpperCase() + (p.popular ? ' <em>Most popular</em>' : '') + '</span>' +
-        '<span class="pr">' + money(priceOf(p)) + '<small>/year</small></span>' +
-        '<span class="sl">' + slotText(p) + '</span></label>';
-    }).join('') + '</div>' + err('plan');
-    var p = planOf(bk.plan);
-    h += '<div class="bk-field"><span class="bk-lbl" id="bill-lbl">Billing cycle</span><div class="bk-seg" role="radiogroup" aria-labelledby="bill-lbl">' +
-      '<label class="' + (bk.billing === 'annual' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="annual"' + (bk.billing === 'annual' ? ' checked' : '') + '>Annual' + (p ? ' · ' + money(priceOf(p)) : '') + '</label>' +
-      '<label class="' + (bk.billing === 'half' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="half"' + (bk.billing === 'half' ? ' checked' : '') + '>Half-year' + (p ? ' · ' + money(p.half) : '') + '</label></div>' +
-      (bk.plan === 'diamond' && bk.billing === 'half' ? '<p class="bk-warn">The Registration Guarantee applies to annual Diamond plans only.</p>' : '') + '</div>';
+    var c = cart(), wl = {};
+    c.lines.forEach(function (x) { if (x.waitlist) wl[x.i] = 1; });
+    var h = '<p class="bk-intro">Add each TLD you want to promote and choose a package for it. Every TLD takes its own slot, so you can mix packages, for example <b>.asia on Diamond</b> and <b>.cloud on Gold</b>.</p>' +
+      '<div class="bk-lines">' + bk.lines.map(function (l, i) {
+        return '<div class="bk-line' + (bk.errors['tld' + i] || bk.errors['plan' + i] ? ' has-err' : '') + '">' +
+          '<div class="bk-line-head"><span class="bk-line-no">TLD ' + (i + 1) + '</span>' +
+          (bk.lines.length > 1 ? '<button type="button" class="bk-line-x" data-li-remove="' + i + '" aria-label="Remove TLD ' + (i + 1) + '">Remove</button>' : '') + '</div>' +
+          '<div class="bk-line-body"><div class="bk-field bk-tld"><label for="bk-tld-' + i + '">Your TLD <span class="req">*</span></label>' +
+          '<input id="bk-tld-' + i + '" data-li-tld="' + i + '" type="text" placeholder="e.g. .asia" value="' + esc(l.tld) + '" autocomplete="off">' + err('tld' + i) + '</div>' +
+          '<div class="bk-field bk-pick"><span class="bk-lbl" id="pl-lbl-' + i + '">Package <span class="req">*</span></span><div class="bk-chips" role="radiogroup" aria-labelledby="pl-lbl-' + i + '">' +
+          PACKAGES.map(function (p) {
+            var on = l.plan === p.key;
+            return '<label class="bk-chip ' + p.key + (on ? ' sel' : '') + (p.slots <= 0 ? ' full' : '') + '"><input type="radio" name="bk-li-' + i + '" value="' + p.key + '"' + (on ? ' checked' : '') + '>' +
+              '<span class="nm">' + p.key.toUpperCase() + '</span><span class="pr">' + money(priceLine(p)) + '</span><span class="sl">' + (p.slots > 0 ? p.slots + ' left' : 'Waitlist') + '</span></label>';
+          }).join('') + '</div>' + err('plan' + i) +
+          (wl[i] ? '<p class="bk-warn">No free ' + esc(l.plan.toUpperCase()) + ' slot for this TLD: it will join the waitlist.</p>' : '') + '</div></div></div>';
+      }).join('') + '</div>' +
+      (bk.lines.length < MAX_LINES ? '<button type="button" class="bk-add" data-li-add>+ Add another TLD</button>' : '<p class="bk-hint">Up to ' + MAX_LINES + ' TLDs per registration. Email marcom@matbao.com for more.</p>');
+    var anyDiamond = bk.lines.some(function (l) { return l.plan === 'diamond'; });
+    h += '<div class="bk-field"><span class="bk-lbl" id="bill-lbl">Billing cycle (all TLDs)</span><div class="bk-seg" role="radiogroup" aria-labelledby="bill-lbl">' +
+      '<label class="' + (bk.billing === 'annual' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="annual"' + (bk.billing === 'annual' ? ' checked' : '') + '>Annual</label>' +
+      '<label class="' + (bk.billing === 'half' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="half"' + (bk.billing === 'half' ? ' checked' : '') + '>Half-year</label></div>' +
+      (anyDiamond && bk.billing === 'half' ? '<p class="bk-warn">The Registration Guarantee applies to annual Diamond plans only.</p>' : '') + '</div>';
     h += '<div class="bk-actions"><button type="button" class="bk-btn primary" data-bk-act="next">Continue</button></div>';
     return h;
   }
 
   function renderDetailsStep() {
-    var tl = parseTlds(bk.tlds);
     var h = '<div class="bk-grid">' +
       field('registry', 'Registry / company', 'text', 'e.g. DotAsia Organisation', true) +
-      field('tlds', 'TLD(s) to promote', 'text', 'e.g. .asia, .cloud', true, tl.length ? 'Will be listed as: <b>' + tl.map(esc).join(' · ') + '</b>' : 'Separate several TLDs with a comma.') +
       field('contactName', 'Contact person', 'text', 'Full name', true) +
       field('jobTitle', 'Job title', 'text', 'e.g. Channel Manager', false) +
       field('email', 'Work email', 'email', 'name@registry.com', true, 'Your confirmation and contract are sent here.') +
@@ -321,59 +343,62 @@
     return '<div class="bk-row"><dt>' + esc(label) + '</dt><dd>' + value + '</dd>' + (goStep != null ? '<button type="button" class="bk-edit" data-bk-go="' + goStep + '">Edit</button>' : '') + '</div>';
   }
   function renderReviewStep() {
-    var q = quote();
+    var c = cart();
+    var lines = c.lines.map(function (x) {
+      return '<span class="bk-rl"><b>' + esc(x.tld) + '</b> · ' + esc(x.plan.key.toUpperCase()) + ' · ' + money(x.amount) + esc(c.unit) + (x.waitlist ? ' <span class="pill wl">Waitlist</span>' : '') + '</span>';
+    }).join('');
     var h = '<dl class="bk-review">' +
-      row('Package', esc(q.plan.key.toUpperCase()) + ' · ' + money(q.amount) + esc(q.unit) + (q.early ? ' <span class="pill">Early bird</span>' : ''), 0) +
+      row(c.lines.length > 1 ? 'TLDs & packages' : 'TLD & package', lines + (c.early ? '<span class="pill">Early bird</span>' : ''), 0) +
+      (c.lines.length > 1 ? row('Total', '<b>' + money(c.total) + esc(c.unit) + '</b>', 0) : '') +
       row('Registry', esc(bk.registry), 1) +
-      row('TLD(s)', parseTlds(bk.tlds).map(esc).join(' · '), 1) +
       row('Contact', esc(bk.contactName) + (bk.jobTitle ? ', ' + esc(bk.jobTitle) : '') + '<br>' + esc(bk.email) + (bk.phone ? ' · ' + esc(bk.phone) : ''), 1) +
       row('Joined in 2026', bk.participated === 'yes' ? 'Yes' : 'No', 1) +
       (bk.notes.trim() ? row('Notes', esc(bk.notes), 1) : '') + '</dl>' +
       '<label class="bk-consent' + (bk.errors.consent ? ' has-err' : '') + '" for="bk-consent"><input type="checkbox" id="bk-consent"' + (bk.consent ? ' checked' : '') + '>' +
-      '<span>I understand my slot is only held after I confirm my email address, and that Mat Bao will confirm my package within ' + HOLD_HOURS + ' hours.</span></label>' + err('consent') +
-      '<div class="bk-actions"><button type="button" class="bk-btn ghost" data-bk-act="back">Back</button><button type="button" class="bk-btn primary" data-bk-act="submit">Reserve my slot</button></div>';
+      '<span>I understand my slots are only held after I confirm my email address, and that Mat Bao will confirm each package within ' + HOLD_HOURS + ' hours.</span></label>' + err('consent') +
+      '<div class="bk-actions"><button type="button" class="bk-btn ghost" data-bk-act="back">Back</button><button type="button" class="bk-btn primary" data-bk-act="submit">' + (c.lines.length > 1 ? 'Reserve my ' + c.lines.length + ' slots' : 'Reserve my slot') + '</button></div>';
     return h;
   }
 
   function renderDone() {
     var d = bk.done;
+    var refs = '<ul class="bk-refs">' + d.items.map(function (x) { return '<li><b>' + esc(x.tld) + '</b> · ' + esc(x.plan.toUpperCase()) + ' · <span>' + esc(x.ref) + '</span></li>'; }).join('') + '</ul>';
     if (!d.preview) {
       return '<div class="bk-done"><div class="bk-tick mail" aria-hidden="true">✉</div><strong>Check your inbox</strong>' +
-        '<p>We sent a confirmation link to <b>' + esc(d.email) + '</b>.</p>' +
-        '<p>Reference <b>' + esc(d.ref) + '</b> · ' + esc(d.plan.toUpperCase()) + '</p>' +
+        '<p>We sent one confirmation link to <b>' + esc(d.email) + '</b> for ' + (d.items.length > 1 ? 'all ' + d.items.length + ' TLDs' : 'your TLD') + '.</p>' + refs +
         '<ol class="bk-next"><li><b>Now</b> Open the email and click “Confirm and hold my slot”' + (d.verifyBy ? ' before ' + esc(d.verifyBy) : '') + '</li>' +
-        '<li><b>After you confirm</b> ' + (d.planFull ? 'You join the waitlist, as all slots are currently reserved' : 'Your slot is on hold and shown as reserved to other registries') + '</li>' +
-        '<li><b>Within ' + HOLD_HOURS + ' hours</b> Mat Bao confirms your package and sends your Registrar Obligation</li>' +
+        '<li><b>After you confirm</b> ' + (d.anyWaitlist ? 'Slots that are free are held; the others join the waitlist' : 'Your slots are on hold and shown as reserved to other registries') + '</li>' +
+        '<li><b>Within ' + HOLD_HOURS + ' hours</b> Mat Bao confirms each package and sends its Registrar Obligation</li>' +
         '<li><b>Then</b> Contract, invoice and kick-off</li></ol>' +
         '<p class="bk-small">No email? Check your spam folder, or email marcom@matbao.com.</p>' +
-        '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book another package</button></div>';
+        '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book more TLDs</button></div>';
     }
-    return '<div class="bk-done"><div class="bk-tick" aria-hidden="true">✓</div><strong>Your slot is reserved</strong>' +
-      '<p>Reference <b>' + esc(d.ref) + '</b> · ' + esc(d.plan.toUpperCase()) + '</p>' +
-      '<p>Held until <b>' + esc(d.holdUntil) + '</b> (GMT+7)</p>' +
+    return '<div class="bk-done"><div class="bk-tick" aria-hidden="true">✓</div><strong>Your slots are reserved</strong>' + refs +
       '<p class="bk-preview">Preview mode: this registration was not sent anywhere yet.</p>' +
-      '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book another package</button></div>';
+      '<button type="button" class="bk-btn ghost" data-bk-act="restart">Book more TLDs</button></div>';
   }
 
   function renderSummary() {
     var box = document.getElementById('mdf-summary');
     if (!box) return;
-    var q = quote();
+    var c = cart();
     var bar = document.getElementById('mdf-sumbar');
     if (bar) {
-      bar.hidden = !q || !!bk.done;
-      if (q) bar.innerHTML = '<span class="pl ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</span><b>' + money(q.amount) + '<small>' + q.unit + '</small></b><span class="sl">' + slotText(q.plan) + '</span>';
+      bar.hidden = !c.lines.length || !!bk.done;
+      if (c.lines.length) bar.innerHTML = '<span class="pl">' + (c.lines.length === 1 ? '<span class="' + c.lines[0].plan.key + '">' + c.lines[0].plan.key.toUpperCase() + '</span>' : c.lines.length + ' TLDs') + '</span><b>' + money(c.total) + '<small>' + c.unit + '</small></b><span class="sl">' + c.lines.map(function (x) { return esc(x.tld || '?'); }).join(' · ') + '</span>';
     }
     var h = '<strong>Your reservation</strong>';
-    if (!q) {
-      h += '<p class="bk-sum-empty">Choose a package to see your price and available slots.</p>';
+    if (!c.lines.length) {
+      h += '<p class="bk-sum-empty">Add a TLD and choose a package to see your price and available slots.</p>';
     } else {
-      h += '<div class="bk-sum-plan ' + q.plan.key + '">' + q.plan.key.toUpperCase() + '</div>' +
-        '<div class="bk-sum-price">' + money(q.amount) + '<small>' + q.unit + '</small></div>' +
-        (q.early ? '<div class="bk-sum-save">Early bird: you save ' + money(q.plan.list - priceOf(q.plan)) + '</div>' : '') +
-        '<ul class="bk-sum-list"><li>' + slotText(q.plan) + ' (of ' + q.plan.total + ')</li>' +
-        '<li>Slot held once you confirm your email · Mat Bao confirms within ' + HOLD_HOURS + ' hours</li>' +
-        (bk.tlds && parseTlds(bk.tlds).length ? '<li>TLD(s): ' + parseTlds(bk.tlds).map(esc).join(' · ') + '</li>' : '') + '</ul>';
+      h += '<ul class="bk-sum-lines">' + c.lines.map(function (x) {
+        return '<li><span class="t">' + esc(x.tld || 'TLD ' + (x.i + 1)) + '</span><span class="bk-sum-plan ' + x.plan.key + '">' + x.plan.key.toUpperCase() + '</span><span class="a">' + money(x.amount) + '</span>' +
+          (x.waitlist ? '<em>Waitlist</em>' : '') + '</li>';
+      }).join('') + '</ul>' +
+        '<div class="bk-sum-price">' + money(c.total) + '<small>' + c.unit + '</small></div>' +
+        (c.early ? '<div class="bk-sum-save">Early bird: you save ' + money(c.lines.reduce(function (n, x) { return n + x.plan.list - priceOf(x.plan); }, 0)) + '</div>' : '') +
+        '<ul class="bk-sum-list">' + PACKAGES.filter(function (p) { return c.lines.some(function (x) { return x.plan.key === p.key; }); }).map(function (p) { return '<li>' + p.key.toUpperCase() + ': ' + slotText(p) + ' (of ' + p.total + ')</li>'; }).join('') +
+        '<li>Slots held once you confirm your email · Mat Bao confirms within ' + HOLD_HOURS + ' hours</li></ul>';
     }
     h += '<p class="bk-sum-foot">First come, first served. Slots are confirmed in the order registrations arrive.</p>';
     box.innerHTML = h;
@@ -391,23 +416,40 @@
     if (first && first.focus) first.focus();
   }
 
-  // Hand-off point for part 3: replace with a POST to the backend, which holds the slot and triggers Sendify.
   function submitRegistration(payload) {
     if (typeof window.MDF_SUBMIT === 'function') return window.MDF_SUBMIT(payload);
-    var ref = 'MDF27-' + payload.plan.toUpperCase().slice(0, 1) + '-' + Math.random().toString(36).slice(2, 7).toUpperCase();
-    return Promise.resolve({ ref: ref, holdUntil: new Date(Date.now() + HOLD_HOURS * 3600 * 1000).toISOString(), preview: true });
+    return Promise.resolve({
+      preview: true, holdUntil: new Date(Date.now() + HOLD_HOURS * 3600 * 1000).toISOString(),
+      items: payload.items.map(function (x) { return { tld: x.tld, plan: x.plan, ref: 'MDF27-' + x.plan.charAt(0).toUpperCase() + '-' + Math.random().toString(36).slice(2, 7).toUpperCase() }; })
+    });
   }
 
+  // "Book this plan" on a package card: fill the first line without a package, or add a new line.
   function bookPlan(key) {
-    if (planOf(key)) { bk.plan = key; bk.step = 0; bk.errors = {}; saveDraft(); }
+    if (planOf(key)) {
+      var free = bk.lines.filter(function (l) { return !l.plan; })[0];
+      if (free) free.plan = key;
+      else if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: key });
+      bk.step = 0; bk.errors = {}; bk.done = null; saveDraft();
+    }
     setActive('sec-book');
     renderForm();
   }
 
   document.addEventListener('click', function (ev) {
-    var go = ev.target.closest && ev.target.closest('#mdf-form [data-bk-go]');
+    var t = ev.target;
+    if (!t.closest || !t.closest('#mdf-form')) return;
+    var go = t.closest('[data-bk-go]');
     if (go) { bk.step = +go.getAttribute('data-bk-go'); bk.errors = {}; renderForm(); return; }
-    var btn = ev.target.closest && ev.target.closest('#mdf-form [data-bk-act]');
+    if (t.closest('[data-li-add]')) {
+      if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: '' });
+      saveDraft(); renderForm();
+      var inp = document.getElementById('bk-tld-' + (bk.lines.length - 1)); if (inp) inp.focus();
+      return;
+    }
+    var rm = t.closest('[data-li-remove]');
+    if (rm) { bk.lines.splice(+rm.getAttribute('data-li-remove'), 1); bk.errors = {}; saveDraft(); renderForm(); return; }
+    var btn = t.closest('[data-bk-act]');
     if (!btn) return;
     var act = btn.getAttribute('data-bk-act');
     if (act === 'next') {
@@ -418,57 +460,59 @@
     } else if (act === 'submit') {
       if (!validate(2)) { renderForm(); focusFirstError(); return; }
       btn.disabled = true; btn.textContent = 'Reserving…';
-      var q = quote();
+      var c = cart();
       var payload = {
-        plan: bk.plan, billing: bk.billing, price: q.amount, earlyBird: q.early,
-        registry: bk.registry.trim(), tlds: parseTlds(bk.tlds), contactName: bk.contactName.trim(), jobTitle: bk.jobTitle.trim(),
+        items: c.lines.map(function (x) { return { tld: x.tld, plan: x.plan.key }; }), billing: bk.billing,
+        registry: bk.registry.trim(), contactName: bk.contactName.trim(), jobTitle: bk.jobTitle.trim(),
         email: bk.email.trim(), phone: bk.phone.trim(), participated2026: bk.participated === 'yes', notes: bk.notes.trim(),
         submittedAt: new Date().toISOString(), consent: true,
         website: (document.getElementById('bk-website') || {}).value || '', elapsedMs: Date.now() - formStartedAt
       };
       submitRegistration(payload).then(function (res) {
         bk.done = {
-          ref: res.ref, plan: bk.plan, email: payload.email, preview: !!res.preview, tlds: payload.tlds, registry: payload.registry,
-          planFull: !!(planOf(bk.plan) && planOf(bk.plan).slots < 1),
-          verifyBy: res.verifyExpiresAt ? fmtDate(res.verifyExpiresAt) : '',
-          holdUntil: new Date(res.holdUntil || Date.now()).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
+          email: payload.email, preview: !!res.preview, registry: payload.registry,
+          items: res.items || [], anyWaitlist: c.lines.some(function (x) { return x.waitlist; }),
+          verifyBy: res.verifyExpiresAt ? fmtDate(res.verifyExpiresAt) : ''
         };
         clearDraft();
         renderForm();
-      }, function (err) {
+      }, function (er) {
         btn.disabled = false; btn.textContent = 'Reserve my slot';
-        var f = (err && err.fields) || {};
-        bk.errors = Object.assign({}, f, { consent: (err && err.message) || 'We could not reserve your slot. Check your connection and try again, or email marcom@matbao.com.' });
-        if (f.registry || f.tlds || f.contactName || f.email) bk.step = 1;
-        if (f.plan) bk.step = 0;
+        var f = (er && er.fields) || {};
+        bk.errors = Object.assign({}, f, { consent: (er && er.message) || 'We could not reserve your slots. Check your connection and try again, or email marcom@matbao.com.' });
+        if (f.registry || f.contactName || f.email) bk.step = 1;
+        if (Object.keys(f).some(function (k) { return /^(tld|plan)\d/.test(k); })) bk.step = 0;
         renderForm();
       });
     } else if (act === 'restart') {
-      var keep = { registry: bk.registry, tlds: bk.tlds, contactName: bk.contactName, jobTitle: bk.jobTitle, email: bk.email, phone: bk.phone, participated: bk.participated };
-      bk.done = null; bk.step = 0; bk.plan = ''; bk.consent = false; bk.notes = ''; bk.errors = {};
-      Object.keys(keep).forEach(function (k) { bk[k] = keep[k]; });
+      bk.done = null; bk.step = 0; bk.lines = [{ tld: '', plan: '' }]; bk.consent = false; bk.notes = ''; bk.errors = {};
       renderForm();
     }
   });
   document.addEventListener('input', function (ev) {
-    var el = ev.target, k = el.getAttribute && el.getAttribute('data-bk');
+    var el = ev.target;
+    var li = el.getAttribute && el.getAttribute('data-li-tld');
+    if (li != null) {
+      bk.lines[+li].tld = el.value;
+      if (bk.errors['tld' + li]) { delete bk.errors['tld' + li]; var fe = el.parentNode.querySelector('.bk-err'); if (fe) fe.remove(); }
+      saveDraft(); renderSummary(); return;
+    }
+    var k = el.getAttribute && el.getAttribute('data-bk');
     if (!k) return;
     bk[k] = el.value;
     if (bk.errors[k]) { delete bk.errors[k]; var f = el.closest('.bk-field'); if (f) { f.classList.remove('has-err'); var m = f.querySelector('.bk-err'); if (m) m.remove(); el.removeAttribute('aria-invalid'); } }
-    if (k === 'tlds') {
-      var hint = el.parentNode.querySelector('.bk-hint'), tl = parseTlds(bk.tlds);
-      if (hint) hint.innerHTML = tl.length ? 'Will be listed as: <b>' + tl.map(esc).join(' · ') + '</b>' : 'Separate several TLDs with a comma.';
-    }
     saveDraft();
     renderSummary();
   });
   document.addEventListener('change', function (ev) {
     var el = ev.target;
     if (!el.closest || !el.closest('#mdf-form')) return;
-    if (el.name === 'bk-plan') { bk.plan = el.value; delete bk.errors.plan; }
+    var m = /^bk-li-(\d+)$/.exec(el.name || '');
+    if (m) { bk.lines[+m[1]].plan = el.value; delete bk.errors['plan' + m[1]]; }
     else if (el.name === 'bk-billing') bk.billing = el.value;
     else if (el.name === 'bk-part') { bk.participated = el.value; delete bk.errors.participated; }
     else if (el.id === 'bk-consent') { bk.consent = el.checked; delete bk.errors.consent; }
+    else if (el.getAttribute('data-li-tld') != null) { el.value = normTld(el.value); bk.lines[+el.getAttribute('data-li-tld')].tld = el.value; saveDraft(); renderSummary(); return; }
     else return;
     saveDraft();
     if (el.id !== 'bk-consent') renderForm(); else renderSummary();
@@ -519,12 +563,22 @@
   /* ───────────── Benefit explanations: hover preview + click for full details ───────────── */
   var tipOpenFor = null;
   function tipBox() { return document.getElementById('mdf-tip'); }
+  // Wireframes say ".yourtld"; once the registry has typed its TLDs in the booking form, show those instead.
+  function yourTlds() { return lineTlds().filter(validTld); }
+  function wfFor(kind) {
+    var svg = window.MDF_WF(kind), t = yourTlds()[0];
+    return t ? svg.replace(/\.yourtld/g, esc(t.length > 12 ? t.slice(0, 12) : t)) : svg;
+  }
+  function yourTldNote() {
+    var t = yourTlds();
+    return t.length ? '<p class="tip-yours">Shown with your TLD' + (t.length > 1 ? 's' : '') + ': <b>' + t.map(esc).join(' · ') + '</b></p>' : '';
+  }
   function legendFor(wf) { return /^(results|vibe|searchbar|promo|banner)$/.test(wf || '') ? '<div class="legend"><i class="d">D</i>Diamond<i class="g">G</i>Gold<i class="s">S</i>Silver</div>' : ''; }
   function showTip(trigger) {
     var box = tipBox(), tip = window.MDF_TIPS && window.MDF_TIPS[trigger.getAttribute('data-tip')];
     if (!box || !tip) return;
-    box.innerHTML = '<b>' + esc(tip.title) + '</b><p>' + esc(tip.body) + '</p>' + (tip.wf ? '<div class="wf">' + window.MDF_WF(tip.wf) + '</div>' : '') +
-      legendFor(tip.wf) + '<p class="tip-more">Click for full details →</p>';
+    box.innerHTML = '<b>' + esc(tip.title) + '</b><p>' + esc(tip.body) + '</p>' + (tip.wf ? '<div class="wf">' + wfFor(tip.wf) + '</div>' : '') +
+      legendFor(tip.wf) + (tip.wf ? yourTldNote() : '') + '<p class="tip-more">Click for full details →</p>';
     box.hidden = false;
     var r = trigger.getBoundingClientRect(), bw = box.offsetWidth, bh = box.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
     box.style.left = Math.min(Math.max(12, r.left), vw - bw - 12) + 'px';
@@ -543,7 +597,7 @@
     el.innerHTML = '<div class="bd-group">' + esc(r.group) + '</div>' +
       '<h3 id="bd-title">' + esc(r.title) + (r.isNew ? ' <em class="tag-new">NEW</em>' : '') + '</h3>' +
       '<div class="bd-grid">' +
-        (r.wf ? '<div class="bd-fig">' + window.MDF_WF(r.wf) + legendFor(r.wf) + '</div>' : '') +
+        (r.wf ? '<div class="bd-fig">' + wfFor(r.wf) + legendFor(r.wf) + yourTldNote() + '</div>' : '') +
         '<div class="bd-text"><div class="bd-sec"><span>What it is</span><p>' + esc(r.what) + '</p></div>' +
         '<div class="bd-sec"><span>Where it appears</span><p>' + esc(r.where) + '</p></div></div>' +
       '</div>' +

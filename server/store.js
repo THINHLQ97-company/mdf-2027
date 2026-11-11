@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS = {
   },
   holdHours: 48,              // Mat Bao promises to confirm within this time
   verifyHours: 24,            // unverified requests expire after this
-  maxActivePerDomain: 2,      // active holds + confirmed per email domain
+  maxActivePerDomain: 6,      // active holds + confirmed packages per email domain (one per TLD)
   teamEmails: ['thinhlq@matbao.com'],
   replyTo: 'marcom@matbao.com'
 };
@@ -31,6 +31,8 @@ function createStore(file) {
   db.settings.program = Object.assign({}, DEFAULT_SETTINGS.program, db.settings.program || {});
   db.settings.plans = Object.assign({}, DEFAULT_SETTINGS.plans, db.settings.plans || {});
   db.registrations = db.registrations || [];
+  // v2: one package per TLD, so the per-organisation cap moves from 2 to 6.
+  if ((db.settings.schema || 1) < 2) { if (db.settings.maxActivePerDomain === 2) db.settings.maxActivePerDomain = 6; db.settings.schema = 2; }
   db.audit = db.audit || [];
   db.mailLog = db.mailLog || [];
 

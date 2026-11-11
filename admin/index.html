@@ -211,6 +211,12 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   function dt(s) { return s ? new Date(s).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : '–'; }
   function localInput(s) { if (!s) return ''; var d = new Date(new Date(s).getTime() + 7 * 3600e3); return d.toISOString().slice(0, 16); }
   function fromLocal(v) { return v ? v + ':00+07:00' : null; }
+  // Registrations sent together (one TLD each) share a groupId.
+  function groupNote(r) {
+    if (!r.groupId || !D) return '';
+    var g = D.registrations.filter(function (x) { return x.groupId === r.groupId; });
+    return g.length > 1 ? ' · cùng đăng ký ' + g.length + ' TLD (' + g.map(function (x) { return x.tlds[0] + ' ' + x.plan.toUpperCase(); }).join(', ') + ')' : '';
+  }
   function pill(st) { return '<span class="pill st-' + st + '">' + esc(ST[st] || st) + '</span>'; }
   function toast(msg, bad) {
     var el = document.createElement('div'); el.className = 'toast' + (bad ? ' bad' : ''); el.textContent = msg;
@@ -318,7 +324,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     h += '<div class="table-wrap"><table><thead><tr><th>Mã / Ngày</th><th>Registry · TLD</th><th>Gói</th><th>Trạng thái</th><th>Hạn xác nhận</th><th class="num">Giá trị</th><th>Thanh toán</th></tr></thead><tbody>' +
       (list.length ? list.map(function (r) {
         return '<tr data-open="' + r.id + '"><td><b>' + esc(r.ref) + '</b><span class="s">' + dt(r.createdAt) + '</span></td>' +
-          '<td><b>' + esc(r.registry) + '</b><span class="s">' + esc(r.tlds.join(', ')) + ' · ' + esc(r.email) + '</span>' + (r.flags.length ? '<span class="flag">⚠ ' + esc(r.flags.join(' · ')) + '</span>' : '') + '</td>' +
+          '<td><b>' + esc(r.registry) + '</b><span class="s">' + esc(r.tlds.join(', ')) + ' · ' + esc(r.email) + groupNote(r) + '</span>' + (r.flags.length ? '<span class="flag">⚠ ' + esc(r.flags.join(' · ')) + '</span>' : '') + '</td>' +
           '<td><span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span><span class="s">' + (r.billing === 'half' ? 'Nửa năm' : 'Cả năm') + (r.earlyBird ? ' · EB' : '') + '</span></td>' +
           '<td>' + pill(r.status) + '</td><td>' + (r.status === 'on_hold' ? dt(r.holdUntil) : r.status === 'unverified' ? '<span class="s">Link hết hạn ' + dt(r.verifyExpiresAt) + '</span>' : '–') + '</td>' +
           '<td class="num">' + money(r.price) + '</td><td class="pay-' + r.payment + '">' + (r.status === 'confirmed' ? PAY[r.payment] : '–') + '</td></tr>';
@@ -397,7 +403,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     var h = '<div class="drawer-bg" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" tabindex="-1">' +
       '<button class="x" data-close aria-label="Đóng">×</button><h2 id="dr-title">' + esc(r.registry) + '</h2><div>' + pill(r.status) + ' <span class="plan-name ' + r.plan + '">' + r.plan.toUpperCase() + '</span> · ' + esc(r.ref) + '</div>' +
       (r.flags.length ? '<div class="banner warn" style="margin-top:12px">⚠ ' + esc(r.flags.join(' · ')) + '</div>' : '') +
-      '<dl class="kv"><dt>TLD</dt><dd><b>' + esc(r.tlds.join(', ')) + '</b></dd><dt>Giá trị</dt><dd>' + money(r.price) + (r.billing === 'half' ? ' / nửa năm' : ' / năm') + (r.earlyBird ? ' (early bird)' : '') + '</dd>' +
+      '<dl class="kv"><dt>TLD</dt><dd><b>' + esc(r.tlds.join(', ')) + '</b>' + (groupNote(r) ? '<br><span class="s">' + esc(groupNote(r).replace(/^ · /, '')) + '</span>' : '') + '</dd><dt>Giá trị</dt><dd>' + money(r.price) + (r.billing === 'half' ? ' / nửa năm' : ' / năm') + (r.earlyBird ? ' (early bird)' : '') + '</dd>' +
       '<dt>Liên hệ</dt><dd>' + esc(r.contactName) + (r.jobTitle ? ', ' + esc(r.jobTitle) : '') + '<br>' + esc(r.email) + (r.phone ? '<br>' + esc(r.phone) : '') + '</dd>' +
       '<dt>Tham gia 2026</dt><dd>' + (r.participated2026 ? 'Có' : 'Không') + '</dd>' + (r.notes ? '<dt>Ghi chú registry</dt><dd>' + esc(r.notes) + '</dd>' : '') +
       '<dt>Gửi lúc</dt><dd>' + dt(r.createdAt) + '</dd><dt>Xác thực email</dt><dd>' + dt(r.verifiedAt) + '</dd>' +

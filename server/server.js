@@ -157,50 +157,64 @@ async function register(req, res) {
   const state = programState(s);
   if (state !== 'open') return send(res, 409, { error: state === 'upcoming' ? `Registration opens on ${fmt(s.program.startAt)}.` : 'Registration for MDF 2027 is closed.' });
 
-  const plan = String(b.plan || ''), billing = b.billing === 'half' ? 'half' : 'annual';
+  const billing = b.billing === 'half' ? 'half' : 'annual';
   const email = String(b.email || '').trim().toLowerCase();
-  const tlds = (Array.isArray(b.tlds) ? b.tlds : []).map((x) => String(x).trim().toLowerCase()).filter(Boolean).slice(0, 5);
+  const normTld = (x) => { x = String(x || '').trim().toLowerCase(); return x ? (x[0] === '.' ? x : '.' + x) : ''; };
+  // New form sends items [{ tld, plan }]: one package per TLD. Older clients sent one plan + several TLDs.
+  let items = Array.isArray(b.items) ? b.items.map((x) => ({ tld: normTld(x && x.tld), plan: String((x && x.plan) || '') }))
+    : (Array.isArray(b.tlds) ? b.tlds : []).map((t) => ({ tld: normTld(t), plan: String(b.plan || '') }));
+  items = items.filter((x) => x.tld || x.plan).slice(0, 5);
   const text = (v, max) => String(v || '').trim().slice(0, max);
   const errors = {};
-  if (!PLAN_KEYS.includes(plan)) errors.plan = 'Choose a package.';
+  if (!items.length) errors.tld0 = 'Add at least one TLD.';
+  const seen = {};
+  items.forEach((x, i) => {
+    if (!/^\.[\p{L}\p{N}-]{2,63}$/u.test(x.tld)) errors['tld' + i] = 'Enter a valid TLD, for example .cloud';
+    else if (seen[x.tld]) errors['tld' + i] = 'This TLD is already in your list.';
+    else if (db.registrations.some((r) => ['on_hold', 'confirmed', 'waitlist'].includes(r.status) && r.tlds.includes(x.tld) && r.email !== email))
+      errors['tld' + i] = `${x.tld} is already registered in MDF 2027. Email marcom@matbao.com if this is your TLD.`;
+    seen[x.tld] = 1;
+    if (!PLAN_KEYS.includes(x.plan)) errors['plan' + i] = 'Choose a package for this TLD.';
+  });
   if (text(b.registry, 120).length < 2) errors.registry = 'Enter your registry or company name.';
-  if (!tlds.length || tlds.some((t) => !/^\.[\p{L}\p{N}-]{2,63}$/u.test(t))) errors.tlds = 'Enter at least one valid TLD, for example .cloud';
   if (text(b.contactName, 80).length < 2) errors.contactName = 'Enter the contact person.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) errors.email = 'Enter a valid work email.';
-  if (b.consent !== true) errors.consent = 'Please confirm to reserve your slot.';
+  if (b.consent !== true) errors.consent = 'Please confirm to reserve your slots.';
   if (Object.keys(errors).length) return send(res, 400, { error: 'Please check the highlighted fields.', fields: errors });
 
-  // Same person registering the same plan again while the first link is still valid: resend instead of creating a duplicate.
-  const pending = db.registrations.find((r) => r.status === 'unverified' && r.email === email && r.plan === plan);
-  if (pending) {
+  // Same person sending the same TLDs again while the first link is still valid: resend instead of creating duplicates.
+  const pending = db.registrations.filter((r) => r.status === 'unverified' && r.email === email && items.some((x) => r.tlds.includes(x.tld)));
+  if (pending.length) {
     if (limited('resend:' + email, 1, 600e3)) return send(res, 429, { error: 'We already sent a confirmation link to this email. Check your inbox (and spam folder).' });
-    await sendMail(emails.verify(pending, s), pending);
-    return send(res, 200, { ref: pending.ref, status: pending.status, email, verifyExpiresAt: pending.verifyExpiresAt, resent: true });
+    const group = db.registrations.filter((r) => r.verifyToken === pending[0].verifyToken);
+    await sendMail(emails.verifyGroup(group, s), group[0]);
+    return send(res, 200, { items: group.map((r) => ({ ref: r.ref, tld: r.tlds[0], plan: r.plan })), email, verifyExpiresAt: group[0].verifyExpiresAt, resent: true });
   }
-  // Cap active registrations per organisation (email domain), so one sender cannot lock every slot.
+  // Cap active packages per organisation (email domain), so one sender cannot lock every slot.
   const activeForDomain = db.registrations.filter((r) => ACTIVE.includes(r.status) && domainOf(r.email) === domainOf(email)).length;
-  if (activeForDomain >= s.maxActivePerDomain) return send(res, 409, { error: `Your organisation already holds ${activeForDomain} packages. Please email marcom@matbao.com to book more.` });
+  if (activeForDomain + items.length > s.maxActivePerDomain) return send(res, 409, { error: `Your organisation can hold up to ${s.maxActivePerDomain} packages in MDF 2027 (currently ${activeForDomain}). Please email marcom@matbao.com to book more.` });
 
-  const { price, earlyBird } = priceFor(plan, billing);
-  const r = {
-    id: crypto.randomUUID(), ref: nextRef(plan), status: 'unverified',
-    plan, billing, price, earlyBird,
-    registry: text(b.registry, 120), tlds, contactName: text(b.contactName, 80), jobTitle: text(b.jobTitle, 80),
-    email, phone: text(b.phone, 40), participated2026: b.participated2026 === true, notes: text(b.notes, 1000),
-    createdAt: iso(now()), verifyToken: token(), verifyExpiresAt: iso(now() + s.verifyHours * 3600e3),
-    obligationToken: token(), ip, userAgent: String(req.headers['user-agent'] || '').slice(0, 200),
-    payment: 'unpaid', contractSigned: false, internalNote: '', history: []
-  };
-  db.registrations.push(r);
-  r.history.push({ at: r.createdAt, by: 'registry', action: 'submitted' });
-  store.audit('submitted', r.id, 'registry', `${r.registry} · ${plan}`);
-  const ok = await sendMail(emails.verify(r, s), r);
+  const groupId = crypto.randomUUID(), verifyToken = token(), at = iso(now()), verifyExpiresAt = iso(now() + s.verifyHours * 3600e3);
+  const group = items.map((x) => {
+    const { price, earlyBird } = priceFor(x.plan, billing);
+    return {
+      id: crypto.randomUUID(), ref: nextRef(x.plan), groupId, status: 'unverified',
+      plan: x.plan, billing, price, earlyBird,
+      registry: text(b.registry, 120), tlds: [x.tld], contactName: text(b.contactName, 80), jobTitle: text(b.jobTitle, 80),
+      email, phone: text(b.phone, 40), participated2026: b.participated2026 === true, notes: text(b.notes, 1000),
+      createdAt: at, verifyToken, verifyExpiresAt,
+      obligationToken: token(), ip, userAgent: String(req.headers['user-agent'] || '').slice(0, 200),
+      payment: 'unpaid', contractSigned: false, internalNote: '', history: [{ at, by: 'registry', action: 'submitted' + (items.length > 1 ? ` (${items.length} TLDs)` : '') }]
+    };
+  });
+  group.forEach((r) => { db.registrations.push(r); store.audit('submitted', r.id, 'registry', `${r.registry} · ${r.tlds[0]} · ${r.plan}`); });
+  const ok = await sendMail(emails.verifyGroup(group, s), group[0]);
   if (!ok) {
-    db.registrations = db.registrations.filter((x) => x.id !== r.id); store.save();
+    db.registrations = db.registrations.filter((x) => x.groupId !== groupId); store.save();
     return send(res, 502, { error: 'We could not send the confirmation email. Please try again or contact marcom@matbao.com.' });
   }
   store.save();
-  send(res, 200, { ref: r.ref, status: r.status, email, verifyExpiresAt: r.verifyExpiresAt });
+  send(res, 200, { items: group.map((r) => ({ ref: r.ref, tld: r.tlds[0], plan: r.plan })), email, verifyExpiresAt });
 }
 
 function page(title, heading, body) {
@@ -218,31 +232,31 @@ a.btn{display:inline-block;margin-top:10px;padding:12px 20px;border-radius:8px;b
 
 async function verify(req, res, url) {
   const t = url.searchParams.get('t') || '';
-  const r = db.registrations.find((x) => x.verifyToken === t);
-  if (!r) return send(res, 404, page('Link not found', 'This link is not valid', '<p>The confirmation link is incorrect or has been replaced by a newer one. Please use the latest email we sent, or register again.</p>'));
-  const s = db.settings;
-  if (r.status === 'unverified' && now() > Date.parse(r.verifyExpiresAt)) { r.status = 'expired'; store.save(); }
-  if (r.status === 'expired') return send(res, 410, page('Link expired', 'This link has expired', `<p>Registration <b>${esc(r.ref)}</b> was not confirmed within ${s.verifyHours} hours, so the slot was not held. Please register again on the MDF 2027 page.</p>`));
-  if (r.status === 'unverified') {
-    const a = availability()[r.plan];
-    r.verifiedAt = iso(now());
-    if (a.available > 0) { r.status = 'on_hold'; r.holdUntil = iso(now() + s.holdHours * 3600e3); }
-    else { r.status = 'waitlist'; }
-    r.history.push({ at: r.verifiedAt, by: 'registry', action: 'email verified → ' + r.status });
-    store.audit('verified', r.id, 'registry', r.status);
+  const group = db.registrations.filter((x) => x.verifyToken === t);
+  if (!group.length) return send(res, 404, page('Link not found', 'This link is not valid', '<p>The confirmation link is incorrect or has been replaced by a newer one. Please use the latest email we sent, or register again.</p>'));
+  const s = db.settings, r0 = group[0];
+  group.forEach((r) => { if (r.status === 'unverified' && now() > Date.parse(r.verifyExpiresAt)) r.status = 'expired'; });
+  if (group.every((r) => r.status === 'expired')) { store.save(); return send(res, 410, page('Link expired', 'This link has expired', `<p>Registration <b>${esc(group.map((r) => r.ref).join(', '))}</b> was not confirmed within ${s.verifyHours} hours, so no slot was held. Please register again on the MDF 2027 page.</p>`)); }
+  const fresh = group.filter((r) => r.status === 'unverified');
+  if (fresh.length) {
+    const at = iso(now());
+    for (const r of fresh) {   // in order, so a registry booking 2 Gold with 1 free slot gets 1 hold + 1 waitlist
+      r.verifiedAt = at;
+      if (availability()[r.plan].available > 0) { r.status = 'on_hold'; r.holdUntil = iso(now() + s.holdHours * 3600e3); }
+      else r.status = 'waitlist';
+      r.history.push({ at, by: 'registry', action: 'email verified → ' + r.status });
+      store.audit('verified', r.id, 'registry', r.status);
+    }
     store.save();
-    await sendMail(r.status === 'on_hold' ? emails.received(r, s) : emails.waitlist(r, s), r);
-    await sendMail(emails.teamNew(r, s, flagsFor(r)), r);
+    await sendMail(emails.receivedGroup(fresh, s), r0);
+    await sendMail(emails.teamNewGroup(fresh, s, flagsFor(r0)), r0);
   }
-  const states = {
-    on_hold: ['Slot on hold', 'Your slot is on hold', `<p>Thank you, ${esc(r.contactName)}. Your <b>${esc(r.plan.toUpperCase())}</b> slot (ref <b>${esc(r.ref)}</b>) is on hold.</p><p>The Mat Bao team will confirm your package by <b>${esc(fmt(r.holdUntil))}</b> and contact you about the next steps.</p>`],
-    waitlist: ['Waitlist', 'You are on the waitlist', `<p>All <b>${esc(r.plan.toUpperCase())}</b> slots were reserved before your confirmation, so registration <b>${esc(r.ref)}</b> is on the waitlist. We will email you as soon as a slot is released.</p>`],
-    confirmed: ['Confirmed', 'Your package is confirmed', `<p>Registration <b>${esc(r.ref)}</b> is already confirmed. Check your email for the Registrar Obligation.</p>`],
-    rejected: ['Registration update', 'This registration was not confirmed', `<p>Registration <b>${esc(r.ref)}</b> was not confirmed. Please contact marcom@matbao.com.</p>`],
-    cancelled: ['Registration update', 'This registration was cancelled', `<p>Registration <b>${esc(r.ref)}</b> was cancelled. Please contact marcom@matbao.com.</p>`]
-  };
-  const [title, h, body] = states[r.status] || states.rejected;
-  send(res, 200, page(title, h, body));
+  const label = { on_hold: 'On hold, Mat Bao confirms within ' + s.holdHours + ' hours', waitlist: 'Waitlist, all slots reserved', confirmed: 'Confirmed', rejected: 'Not confirmed', cancelled: 'Cancelled', expired: 'Expired' };
+  const rows = group.map((r) => `<li><b>${esc(r.tlds[0])}</b> · ${esc(r.plan.toUpperCase())} · ${esc(r.ref)}<br><span style="color:#7fe7ff">${esc(label[r.status] || r.status)}</span></li>`).join('');
+  const held = group.filter((r) => r.status === 'on_hold');
+  const heading = held.length ? (group.length > 1 ? 'Your slots are on hold' : 'Your slot is on hold') : group.some((r) => r.status === 'waitlist') ? 'You are on the waitlist' : 'Registration status';
+  send(res, 200, page('Registration status', heading, `<p>Thank you, ${esc(r0.contactName)}. Here is the status of your registration:</p><ul style="padding-left:18px;line-height:24px">${rows}</ul>` +
+    (held.length ? `<p>The Mat Bao team will confirm by <b>${esc(fmt(held[0].holdUntil))}</b> and contact you about the next steps.</p>` : '')));
 }
 
 function obligationPage(req, res, tok) {
@@ -308,7 +322,8 @@ async function adminAction(req, res, id, who) {
     if (!map[r.status]) return bad('Nothing to resend for this status.');
     if (r.status === 'unverified') { r.verifyExpiresAt = iso(now() + s.verifyHours * 3600e3); }
     log('resent ' + map[r.status] + ' email'); store.save();
-    await sendMail(emails[map[r.status]](r, s), r);
+    if (r.status === 'unverified') { const g = db.registrations.filter((x) => x.verifyToken === r.verifyToken && x.status === 'unverified'); g.forEach((x) => { x.verifyExpiresAt = r.verifyExpiresAt; }); await sendMail(emails.verifyGroup(g, s), r); }
+    else await sendMail(emails[map[r.status]](r, s), r);
   } else if (act === 'update') {
     if (['unpaid', 'invoiced', 'paid'].includes(b.payment)) r.payment = b.payment;
     if (typeof b.contractSigned === 'boolean') r.contractSigned = b.contractSigned;

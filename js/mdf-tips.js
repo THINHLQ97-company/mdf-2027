@@ -92,31 +92,33 @@
       h += bar(158, 44, 68, 44) + bar(14, 94, 68, 44) + bar(86, 94, 68, 44) + bar(158, 94, 68, 44);
       return frame(h);
     },
+    // Your TLD always comes first, the bundled extension after it.
     combo: function () {
-      var h = searchBox(26) + t(14, 56, 'mybrand.com  289.000 đ', 8, C.txt, null, 600) + '<line x1="14" y1="64" x2="226" y2="64" stroke="' + C.line + '"/>';
-      h += hi(14, 70, 104, 64) + t(20, 81, 'Suggested for you', 6.5, C.txt) + t(112, 81, '65 left', 6, C.hi, 'end');
-      h += '<rect x="20" y="88" width="20" height="10" rx="5" fill="none" stroke="#7ac943"/>' + t(30, 95.5, '.com', 5.5, C.txt, 'middle');
-      h += t(44, 95.5, '+', 7, C.txt) + '<rect x="50" y="88" width="34" height="10" rx="5" fill="' + C.hi + '"/>' + t(67, 95.5, '.yourtld', 5.5, '#06102e', 'middle', 700);
-      h += t(88, 95.5, '+ …', 7, C.txt) + t(20, 112, 'Combo, first year', 6.5, C.mute) + t(20, 126, '349.000 đ', 9, '#ff6b6b', null, 700) + tier(108, 126, 'G');
-      h += bar(122, 70, 104, 64);
+      var h = searchBox(26) + t(14, 56, 'Search: mybrand', 8, C.txt, null, 600) + '<line x1="14" y1="64" x2="226" y2="64" stroke="' + C.line + '"/>';
+      h += hi(14, 70, 112, 64) + t(20, 81, 'Suggested for you', 6.5, C.txt) + t(120, 81, '65 left', 6, C.hi, 'end');
+      h += '<rect x="20" y="88" width="40" height="11" rx="5.5" fill="' + C.hi + '"/>' + t(40, 95.8, '.yourtld', 5.6, '#06102e', 'middle', 700);
+      h += t(63, 96, '+', 7, C.txt) + '<rect x="69" y="88" width="22" height="11" rx="5.5" fill="none" stroke="#7ac943"/>' + t(80, 95.8, '.com', 5.5, C.txt, 'middle');
+      h += t(94, 96, '+ …', 7, C.txt) + t(20, 107, 'Your TLD + .com / .net / .vn', 5.6, C.mute);
+      h += t(20, 119, 'Combo, first year', 6.5, C.mute) + t(20, 130, 'Combo price', 8.5, '#ff6b6b', null, 700) + tier(116, 127, 'G');
+      h += bar(132, 70, 94, 64);
       return frame(h);
     },
     cartpopup: function () {
-      function cb(y, name, tierL) {
-        return '<rect x="52" y="' + y + '" width="136" height="14" rx="4" fill="' + C.hiFill + '" stroke="' + C.hi + '"/>' +
-          '<rect x="57" y="' + (y + 3.5) + '" width="7" height="7" rx="1.5" fill="none" stroke="' + C.txt + '"/>' +
-          t(70, y + 9.8, 'Claim ' + name, 6.8, C.txt) + tier(178, y + 7, tierL);
+      function cb(y, name, sub, tierL, mine) {
+        return '<rect x="48" y="' + y + '" width="144" height="16" rx="4" fill="' + (mine ? C.hiFill : 'rgba(255,255,255,.06)') + '" stroke="' + (mine ? C.hi : C.line) + '"/>' +
+          '<rect x="53" y="' + (y + 4.5) + '" width="7" height="7" rx="1.5" fill="none" stroke="' + C.txt + '"/>' +
+          t(65, y + 8.2, 'Claim ' + name, 6.6, C.txt, null, mine ? 700 : null) + t(65, y + 13.6, sub, 4.8, mine ? C.hi : C.mute) + tier(182, y + 8, tierL);
       }
       return frame(searchBox(26) + bar(14, 50, 212, 22) + bar(14, 78, 104, 50) + bar(122, 78, 104, 50) +
         '<rect x="1" y="21" width="238" height="128" fill="#000" fill-opacity=".5"/>' +
-        '<rect x="40" y="30" width="160" height="104" rx="6" fill="' + C.frame + '" stroke="' + C.hi + '" stroke-width="1.5"/>' +
-        t(120, 44, 'Free for the first year!', 8.5, C.txt, 'middle', 700) +
-        t(120, 56, 'mybrand.cloud & mybrand.asia free', 6.5, C.hi, 'middle') +
-        cb(62, 'mybrand.asia', 'D') + cb(80, 'mybrand.cloud', 'D') +
-        '<rect x="52" y="102" width="40" height="14" rx="4" fill="rgba(255,255,255,.25)"/>' + t(72, 111.5, 'Skip', 6.5, C.txt, 'middle') +
-        '<rect x="98" y="102" width="90" height="14" rx="4" fill="#7ac943"/>' + t(143, 111.5, 'Claim & go to cart', 6.5, '#06102e', 'middle', 700) +
+        '<rect x="38" y="28" width="164" height="108" rx="6" fill="' + C.frame + '" stroke="' + C.hi + '" stroke-width="1.5"/>' +
+        t(120, 41, 'Free for the first year!', 8.5, C.txt, 'middle', 700) +
+        t(120, 52, 'with your new mybrand.com', 6, C.mute, 'middle') +
+        cb(58, 'mybrand.yourtld', 'Your TLD · shown first or second', 'D', true) + cb(77, 'mybrand.other', 'Other Diamond TLD', 'D', false) +
+        '<rect x="48" y="100" width="40" height="14" rx="4" fill="rgba(255,255,255,.25)"/>' + t(68, 109.5, 'Skip', 6.5, C.txt, 'middle') +
+        '<rect x="94" y="100" width="98" height="14" rx="4" fill="#7ac943"/>' + t(143, 109.5, 'Claim & go to cart', 6.5, '#06102e', 'middle', 700) +
         t(120, 128, 'Renews from year 2 at the standard price', 5.5, C.mute, 'middle') +
-        t(120, 143, 'Each ticked domain is added to the cart', 7, C.mute, 'middle'));
+        t(120, 143, 'Your TLD + .com / .net / .vn / .com.vn / .net.vn', 6.4, C.mute, 'middle'));
     }
   };
 
@@ -173,12 +175,12 @@
     ] },
     { group: 'Bundle (max. 5 partners)', icon: 3, rows: [
       { key: 'bundlePlacement', title: 'Bundle Placement', isNew: true, wf: 'combo',
-        plans: { silver: NO, gold: ['Combo card', 'In search results, next to .COM / .NET / .VN'], diamond: ['Cart pop-up', 'Shown when the customer goes to the cart'] },
+        plans: { silver: NO, gold: ['Combo card', 'Your TLD + .COM / .NET / .VN in search results'], diamond: ['Cart pop-up', 'Your TLD offered when the customer goes to the cart'] },
         what: 'Your TLD is offered together with the popular domain the customer is buying.',
-        where: 'Gold: “Suggested for you” combo cards on the search results page. Diamond: pop-up after “Go to cart”.',
+        where: 'Gold: “Suggested for you” combo cards on the search results page, your TLD first, then .COM / .NET / .VN. Diamond: pop-up after “Go to cart”, offering your TLD for the name in the cart.',
         notes: ['Diamond: each offered domain has its own tick box and is added to the cart only when ticked.'] },
       { key: 'bundleTrigger', title: 'Triggering Domains', isNew: true, wf: 'cartpopup',
-        plans: { silver: NO, gold: ['.COM · .NET · .VN', 'Combo with these extensions'], diamond: ['5 extensions', '.com · .net · .vn · .com.vn · .net.vn'] },
+        plans: { silver: NO, gold: ['Your TLD + .COM · .NET · .VN', 'Your TLD shown first in the combo'], diamond: ['Your TLD + 5 extensions', '.com · .net · .vn · .com.vn · .net.vn'] },
         what: 'The new domain registrations that trigger your bundle offer.',
         where: 'Search results (Gold) and cart (Diamond).',
         notes: ['The offered name exactly matches the name the customer is registering (e.g. mybrand.com → mybrand.yourtld).'] },

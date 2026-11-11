@@ -106,11 +106,72 @@ ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-b
 </td></tr></table>`;
   }
 
+  // One row per TLD: TLD · package · price · status (status only after email verification).
+  function linesTable(regs, lang, withStatus) {
+    const vi = lang === 'vi';
+    const ST = vi ? { on_hold: 'Đang giữ chỗ', waitlist: 'Danh sách chờ', unverified: 'Chờ xác thực' } : { on_hold: 'On hold', waitlist: 'Waitlist', unverified: 'Awaiting email confirmation' };
+    const unit = regs[0].billing === 'half' ? (vi ? '/nửa năm' : '/half-year') : (vi ? '/năm' : '/year');
+    const total = regs.reduce((n, r) => n + r.price, 0);
+    const cell = `font:400 14px/21px ${FONT};color:${C.body};padding:11px 14px;`;
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${C.panel}" style="background:${C.panel};border:1px solid ${C.line};border-radius:12px;margin:8px 0 18px;">
+<tr><td style="${cell}color:${C.mute};font-size:12px;">TLD</td><td style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Gói' : 'Package'}</td><td align="right" style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Giá' : 'Price'}</td>${withStatus ? `<td style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Trạng thái' : 'Status'}</td>` : ''}</tr>
+${regs.map((r) => `<tr><td style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${esc(r.tlds.join(', '))}</b><br><span style="font-size:12px;color:${C.mute};">${esc(r.ref)}</span></td><td style="${cell}border-top:1px solid ${C.line};">${planTag(r.plan)}</td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;">${money(r.price)}${unit}</td>${withStatus ? `<td style="${cell}border-top:1px solid ${C.line};color:${r.status === 'waitlist' ? '#ffcf4d' : C.cyan};">${ST[r.status] || r.status}</td>` : ''}</tr>`).join('')}
+${regs.length > 1 ? `<tr><td colspan="2" style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${vi ? 'Tổng' : 'Total'}</b></td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;"><b style="color:${C.ink};">${money(total)}${unit}</b></td>${withStatus ? `<td style="border-top:1px solid ${C.line};"></td>` : ''}</tr>` : ''}
+<tr><td colspan="${withStatus ? 4 : 3}" style="${cell}border-top:1px solid ${C.line};font-size:13px;color:${C.mute};">${esc(regs[0].registry)} · ${esc(regs[0].contactName)} · ${esc(regs[0].email)}</td></tr></table>`;
+  }
+
   const verifyLink = (r) => `${baseUrl}/api/verify?t=${encodeURIComponent(r.verifyToken)}`;
   const obligationLink = (r) => `${baseUrl}/obligation/${encodeURIComponent(r.obligationToken)}`;
 
   return {
     obligationHtml, obligationLink, layout,
+
+    verifyGroup(regs, s) {
+      if (regs.length === 1) return this.verify(regs[0], s);
+      const r = regs[0];
+      return {
+        tag: 'verify', to: [r.email], replyTo: s.replyTo,
+        subject: `Confirm your email to hold your ${regs.length} slots – Mat Bao MDF 2027`,
+        html: layout('Confirm your email', eyebrow('Step 2 of 4 · Action needed') + h1(`Confirm your email to hold your ${regs.length} slots`) + steps(1) +
+          p(`Hi ${b(esc(r.contactName))},`) +
+          p(`Thank you for registering ${regs.length} TLDs for the Mat Bao MDF Program 2027. One click confirms this email address and places all of them on hold.`) +
+          button(verifyLink(r), 'Confirm and hold my slots') +
+          p(`This link expires on <b style="color:#ffffff;">${fmt(r.verifyExpiresAt)}</b>. Until you confirm, no slot is held and other registries can still book them.`) +
+          linesTable(regs, 'en', false) + p('If you did not request this, you can ignore this email.'), 'Confirm your email to hold your slots'),
+        text: `Confirm your email to hold your ${regs.length} slots: ${verifyLink(r)} (expires ${fmt(r.verifyExpiresAt)}). Refs ${regs.map((x) => x.ref).join(', ')}.`
+      };
+    },
+
+    receivedGroup(regs, s) {
+      if (regs.length === 1) return regs[0].status === 'on_hold' ? this.received(regs[0], s) : this.waitlist(regs[0], s);
+      const r = regs[0], held = regs.filter((x) => x.status === 'on_hold'), wl = regs.filter((x) => x.status === 'waitlist');
+      return {
+        tag: 'received', to: [r.email], replyTo: s.replyTo,
+        subject: `We've received your registration for ${regs.length} TLDs – Mat Bao MDF 2027`,
+        html: layout('Registration received', eyebrow('Registration received') + h1(held.length ? `${held.length} of ${regs.length} slots are on hold` : 'You are on the waitlist') + steps(2) +
+          p(`Hi ${b(esc(r.contactName))},`) +
+          (held.length ? p(`The Mat Bao team will confirm each package within <b style="color:#ffffff;">${s.holdHours} hours</b> (by ${fmt(held[0].holdUntil)}) and contact you about the next steps: contract, invoice and brand assets.`) : '') +
+          (wl.length ? p(`${wl.length === 1 ? 'One TLD is' : wl.length + ' TLDs are'} on the waitlist because all slots in that package are reserved. We will email you as soon as a slot is released.`) : '') +
+          linesTable(regs, 'en', true) +
+          p('Each confirmed package comes with its own Registrar Obligation.'), 'Registration received'),
+        text: `Registration received for ${regs.length} TLDs: ` + regs.map((x) => `${x.tlds[0]} ${x.plan} ${x.status}`).join('; ')
+      };
+    },
+
+    teamNewGroup(regs, s, flags) {
+      if (regs.length === 1) return this.teamNew(regs[0], s, flags);
+      const r = regs[0], held = regs.filter((x) => x.status === 'on_hold');
+      return {
+        tag: 'team-new', to: s.teamEmails, replyTo: r.email,
+        subject: `[MDF 2027] Đăng ký mới: ${r.registry} – ${regs.length} TLD (${regs.map((x) => x.tlds[0] + ' ' + x.plan.toUpperCase()).join(', ')})`,
+        html: layout('Đăng ký mới', eyebrow('Thông báo nội bộ') + h1(`${esc(r.registry)} đăng ký ${regs.length} TLD`) +
+          p(held.length ? `${held.length} suất đang được giữ chỗ. Cần xác nhận từng gói trên dashboard trước <b style="color:#ffffff;">${fmt(held[0].holdUntil, 'vi')}</b>.` : 'Tất cả TLD đều vào danh sách chờ.') +
+          (flags.length ? p('<b style="color:#ffcf4d">Lưu ý:</b> ' + flags.map(esc).join(' · ')) : '') +
+          linesTable(regs, 'vi', true) + p(`Đã tham gia 2026: ${r.participated2026 ? 'Có' : 'Không'}${r.notes ? ' · Ghi chú: ' + esc(r.notes) : ''}`) +
+          button(`${baseUrl}/admin/#reg-${r.id}`, 'Mở dashboard'), 'Đăng ký mới'),
+        text: `Đăng ký mới: ${r.registry} – ${regs.map((x) => x.tlds[0] + ' ' + x.plan).join(', ')}. Dashboard: ${baseUrl}/admin/`
+      };
+    },
 
     verify(r, s) {
       return {
