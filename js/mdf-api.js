@@ -11,6 +11,7 @@
       .catch(function () { return null; });
   }
 
+  window.MDF_REFRESH = refresh;
   refresh().then(function (st) {
     if (!st) return;   // no server behind this page: keep preview mode
     window.MDF_SUBMIT = function (payload) {

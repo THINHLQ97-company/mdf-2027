@@ -113,11 +113,21 @@
     var wrap = root.querySelector('.title-countdown');
     var units = root.querySelectorAll('.time-countdown u');
     if (units.length < 3) return;
-    if (!isEarlyBird() || PROGRAM.state !== 'open') { if (wrap) wrap.style.display = 'none'; return; }
+    var title = wrap && wrap.querySelector('strong');
     function pad(n) { return (n < 10 ? '0' : '') + n; }
+    // Before opening: count down to opening. During early bird: count down to its end. Otherwise hidden.
+    function target() {
+      var t0 = Date.parse(PROGRAM.startAt);
+      if (Date.now() < t0) return { t: t0, label: 'Registration opens in' };
+      if (isEarlyBird() && Date.now() <= Date.parse(PROGRAM.endAt)) return { t: EARLY_BIRD_DEADLINE.getTime(), label: 'Early bird offer ends in' };
+      return null;
+    }
     function tick() {
-      var total = Math.floor(Math.max(0, EARLY_BIRD_DEADLINE.getTime() - Date.now()) / 1000);
-      if (total === 0 && wrap) wrap.style.display = 'none';
+      var tg = target();
+      if (wrap) wrap.style.display = tg ? '' : 'none';
+      if (!tg) return;
+      if (title && title.textContent !== tg.label) title.textContent = tg.label;
+      var total = Math.floor(Math.max(0, tg.t - Date.now()) / 1000);
       var vals = [Math.floor(total / 86400), Math.floor((total % 86400) / 3600), Math.floor((total % 3600) / 60)];
       units.forEach(function (u, i) { u.lastChild.nodeValue = pad(vals[i]); });
     }
@@ -145,6 +155,9 @@
     renderComparison();
     renderForm();
     startCountdown();
+    renderTimelines();
+    window.setInterval(renderTimelines, 60000);
+    window.setInterval(tickCountdowns, 1000);
     setActive('hero');
 
     if (!mountDeck.bound) {
@@ -163,7 +176,65 @@
     { key: 'diamond', list: 6500, half: 3575, slots: 2, total: 2, features: ['searchDiamond', 'suggestDiamond', 'vibeDiamond', 'cartPopup', 'guarantee', 'boostDiamond', 'merchDiamond'], isNew: ['vibeDiamond', 'cartPopup', 'guarantee'] }
   ];
   var EARLY_DISCOUNT = 0.05;
-  var PROGRAM = { state: 'open', startAt: null, endAt: null, live: false };
+  var PROGRAM = { state: 'open', startAt: '2026-11-21T00:00:00+07:00', endAt: '2026-12-21T23:59:59+07:00', live: false };
+  var PROGRAM_RUNS = new Date('2027-01-01T00:00:00+07:00');
+
+  /* ───────────── Timeline: opens → early bird ends → closes → programme runs ───────────── */
+  function dayLabel(d) { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Ho_Chi_Minh' }); }
+  function daysUntil(t) { return Math.max(0, Math.ceil((t - Date.now()) / 864e5)); }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function timelineHtml(compact) {
+    var t0 = Date.parse(PROGRAM.startAt), tEb = EARLY_BIRD_DEADLINE.getTime(), tEnd = Date.parse(PROGRAM.endAt), t1 = PROGRAM_RUNS.getTime(), now = Date.now();
+    var hasEb = tEb > t0 && EARLY_DISCOUNT > 0;
+    var pct = Math.round(EARLY_DISCOUNT * 100);
+    // Milestones are evenly spaced so labels never collide; time between two milestones fills that gap linearly.
+    var stops = hasEb ? [t0, tEb, tEnd, t1] : [t0, tEnd, t1];
+    var pos = function (t) {
+      if (t <= stops[0]) return 0;
+      for (var k = 1; k < stops.length; k++) if (t <= stops[k]) return ((k - 1) + (t - stops[k - 1]) / (stops[k] - stops[k - 1])) / (stops.length - 1) * 100;
+      return 100;
+    };
+    var status, cls = '';
+    if (now < t0) status = 'Registration opens in <b>' + plural(daysUntil(t0), 'day') + '</b>' + (hasEb ? ' · early bird −' + pct + '% for the first ' + plural(Math.round((tEb - t0) / 864e5), 'day') : '');
+    else if (now <= tEb && hasEb && now <= tEnd) { status = 'Early bird −' + pct + '% ends in <b>' + plural(daysUntil(tEb), 'day') + '</b> · ' + dayLabel(tEb); cls = ' eb'; }
+    else if (now <= tEnd) status = 'Registration open · closes in <b>' + plural(daysUntil(tEnd), 'day') + '</b>';
+    else if (now < t1) status = 'Registration closed · programme starts ' + dayLabel(t1) + ' 2027';
+    else status = 'MDF Program 2027 is running';
+    var ms = [
+      { t: t0, d: dayLabel(t0), l: 'Registration opens', s: 'Opens' },
+      hasEb ? { t: tEb, d: dayLabel(tEb), l: 'Early bird ends', s: '−' + pct + '% ends', eb: 1 } : null,
+      { t: tEnd, d: dayLabel(tEnd), l: 'Registration closes', s: 'Closes' },
+      { t: t1, d: 'Jan 2027', l: 'Programme starts', s: 'Starts' }
+    ].filter(Boolean);
+    var fill = now <= t0 ? 0 : pos(now);
+    return '<div class="mdf-tl' + (compact ? ' compact' : '') + cls + '" role="group" aria-label="MDF 2027 timeline">' +
+      '<p class="tl-status">' + status + '</p>' +
+      '<div class="tl-track">' +
+        (hasEb ? '<div class="tl-eb" style="left:0;width:' + pos(tEb) + '%"><span>Early bird −' + pct + '% · ' + dayLabel(t0) + '–' + dayLabel(tEb) + '</span></div>' : '') +
+        '<div class="tl-fill" style="width:' + fill + '%"></div>' +
+        (now > t0 && now < t1 ? '<i class="tl-now" style="left:' + fill + '%" title="Today"></i>' : '') +
+        ms.map(function (m, i) {
+          var done = now >= m.t;
+          return '<div class="tl-m' + (m.eb ? ' is-eb' : '') + (done ? ' done' : '') + (i === 0 ? ' first' : '') + (i === ms.length - 1 ? ' last' : '') + '" style="left:' + pos(m.t) + '%"><i></i><b>' + m.d + '</b><span class="l">' + m.l + '</span><span class="s">' + m.s + '</span></div>';
+        }).join('') +
+      '</div></div>';
+  }
+  // Days / hours / minutes / seconds boxes, refreshed every second for every [data-countdown] on the page.
+  function countdownHtml(iso) {
+    var s = Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 1000));
+    var v = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60];
+    return ['Days', 'Hours', 'Minutes', 'Seconds'].map(function (l, i) { return '<span><b>' + (v[i] < 10 ? '0' : '') + v[i] + '</b><i>' + l + '</i></span>'; }).join('');
+  }
+  function tickCountdowns() {
+    root.querySelectorAll('[data-countdown]').forEach(function (el) {
+      el.innerHTML = countdownHtml(el.getAttribute('data-countdown'));
+      // Opening time reached: reload state from the server so the form unlocks by itself.
+      if (Date.parse(el.getAttribute('data-countdown')) <= Date.now() && !el._done) { el._done = true; if (window.MDF_REFRESH) window.MDF_REFRESH(); else { PROGRAM.state = 'open'; renderForm(); } }
+    });
+  }
+  function renderTimelines() {
+    root.querySelectorAll('[data-tl]').forEach(function (el) { el.innerHTML = timelineHtml(el.getAttribute('data-tl') === 'compact'); });
+  }
   function money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
   function priceOf(p) { return isEarlyBird() ? p.list * (1 - EARLY_DISCOUNT) : p.list; }
 
@@ -295,6 +366,7 @@
     if (PROGRAM.state !== 'open') {
       return '<div class="bk-closed"><strong>' + (PROGRAM.state === 'upcoming' ? 'Registration opens soon' : 'Registration is closed') + '</strong><p>' +
         (PROGRAM.state === 'upcoming' ? 'Bookings for MDF 2027 open on <b>' + esc(fmtDate(PROGRAM.startAt)) + '</b>.' : 'MDF 2027 bookings closed on <b>' + esc(fmtDate(PROGRAM.endAt)) + '</b>.') +
+        (PROGRAM.state === 'upcoming' ? '</p><div class="bk-cd" data-countdown="' + esc(PROGRAM.startAt) + '" role="timer" aria-label="Time until registration opens">' + countdownHtml(PROGRAM.startAt) + '</div><p>' : '') +
         ' Questions? Email marcom@matbao.com.</p></div>';
     }
     var c = cart(), wl = {};
@@ -409,7 +481,7 @@
     var el = document.getElementById('mdf-form');
     if (!el) return;
     if (bk.done) el.innerHTML = renderDone();
-    else el.innerHTML = renderSteps() + '<div class="bk-body">' + [renderPlanStep, renderDetailsStep, renderReviewStep][bk.step]() + '</div>';
+    else el.innerHTML = '<div data-tl="compact">' + timelineHtml(true) + '</div>' + renderSteps() + '<div class="bk-body">' + [renderPlanStep, renderDetailsStep, renderReviewStep][bk.step]() + '</div>';
     renderSummary();
   }
   function focusFirstError() {
@@ -736,8 +808,7 @@
         p.list = s.list; p.half = s.half; p.total = s.total; p.slots = s.available; p.onHold = s.onHold;
       });
       if (document.getElementById('pkg-container')) { renderPackages(); renderComparison(); renderForm(); }
-      var wrap = root.querySelector('.title-countdown');
-      if (wrap) wrap.style.display = (PROGRAM.state === 'open' && isEarlyBird()) ? '' : 'none';
+      renderTimelines();
     }
   };
 
