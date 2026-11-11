@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   program: {
     startAt: '2026-11-21T00:00:00+07:00',
     endAt: '2026-12-21T23:59:59+07:00',
-    earlyBirdUntil: '2026-11-30T23:59:59+07:00',
+    earlyBirdUntil: '2026-12-04T23:59:59+07:00',
     earlyBirdPct: 5
   },
   plans: {

@@ -8,7 +8,7 @@
   var PASSWORD = '@mdf2027';
   var STORAGE_KEY = 'mdf2027-authed';
   // Early bird deadline (GMT+7). Prices drop back to list price automatically after this moment.
-  var EARLY_BIRD_DEADLINE = new Date('2026-11-30T23:59:59+07:00');
+  var EARLY_BIRD_DEADLINE = new Date('2026-12-04T23:59:59+07:00');
   function isEarlyBird() { return Date.now() < EARLY_BIRD_DEADLINE.getTime(); }
   var SLIDES = ['hero', 'sec-intro', 'sec-benefits', 'sec-guarantee', 'sec-packages', 'sec-comparison', 'sec-about', 'sec-book'];
   // Pages with their own scroll: wheel scrolls the page first, only switches slide at the top/bottom edge.
