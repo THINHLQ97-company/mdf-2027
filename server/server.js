@@ -576,6 +576,10 @@ async function admin(req, res, url) {
     store.audit('drafts downloaded', null, who, `${url.searchParams.get('wave')} · ${z.count} email`);
     return send(res, 200, z.data, { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${z.name}"` });
   }
+  if (p === '/admin/api/outreach/email' && req.method === 'GET') {
+    const e = getOutreach().emailParts(url.searchParams.get('wave'), url.searchParams.get('contact'));
+    return send(res, e ? 200 : 404, e || { error: 'Không có email.' });
+  }
   if (p === '/admin/api/outreach/preview' && req.method === 'GET') {
     const h = getOutreach().preview(url.searchParams.get('wave'), url.searchParams.get('contact'));
     return send(res, h ? 200 : 404, h || 'Không có email để xem trước.', { 'Content-Security-Policy': "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'" });

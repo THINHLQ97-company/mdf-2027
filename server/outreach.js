@@ -181,7 +181,7 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
       const list = w.audience ? db.outreach.contacts.filter((c) => inAudience(c, w.audience)) : [];
       const date = st.date || auto;
       return {
-        key: w.key, title: w.title, who: w.who, desc: w.desc, date, autoDate: auto, custom: !!st.date, status: st.status || 'todo', note: st.note || '',
+        key: w.key, title: w.title, who: w.who, desc: w.desc, date, autoDate: auto, members: list.map((c) => c.id), custom: !!st.date, status: st.status || 'todo', note: st.note || '',
         doneAt: st.doneAt || null, doneBy: st.doneBy || '', template: !!w.tpl, recipients: list.length,
         missingTo: list.filter((c) => !(c.to || []).length).map((c) => c.name),
         due: (st.status || 'todo') === 'todo' && date <= t, overdue: (st.status || 'todo') === 'todo' && date < t
@@ -192,7 +192,7 @@ function createOutreach({ root, dataDir, baseUrl, db, store, availability }) {
   /* ── email building blocks (Outlook-safe) ── */
   const FONT = "Aptos, Calibri, 'Segoe UI', Helvetica, Arial, sans-serif";
   const P = (h, x = '') => `<p style="margin:0 0 12px;font-family:${FONT};font-size:11.5pt;line-height:1.45;color:#1d1d1b;${x}">${h}</p>`;
-  const H = (icon, t) => `<p style="margin:20px 0 8px;font-family:${FONT};font-size:12.5pt;font-weight:bold;color:#0b1550;">${icon}&nbsp; ${t}</p>`;
+  const H = (icon, t) => `<p style="margin:20px 0 8px;font-family:${FONT};font-size:12.5pt;font-weight:bold;color:#0b1550;">${t}</p>`;
   const UL = (items) => `<ul style="margin:0 0 12px 0;padding-left:22px;font-family:${FONT};font-size:11.5pt;line-height:1.45;color:#1d1d1b;">${items.map((x) => `<li style="margin:0 0 6px;">${x}</li>`).join('')}</ul>`;
   const OL = (items) => `<ol style="margin:0 0 12px 0;padding-left:22px;font-family:${FONT};font-size:11.5pt;line-height:1.45;color:#1d1d1b;">${items.map((x) => `<li style="margin:0 0 6px;">${x}</li>`).join('')}</ol>`;
   const TH = (t, r) => `<td style="padding:9px 12px;background:#0b1550;color:#ffffff;font-family:${FONT};font-size:10.5pt;font-weight:bold;${r ? 'text-align:right;' : ''}">${t}</td>`;
@@ -215,10 +215,10 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
     'Click the link in the confirmation email to hold your slot. Our team confirms within 48 hours and sends the Registrar Obligation for your agreement.'
   ]);
   const whatsNew = () => UL([
-    '🛡️ <b>Registration Guarantee</b> (Diamond): we commit to a minimum number of new registrations. If we fall short, the gap becomes credit toward your 2028 package.',
-    '🛒 <b>Bundle placements</b>: Gold gets a combo card next to .COM / .NET / .VN in search results; Diamond gets the cart pop-up offering your TLD free for the first year.',
-    '🤖 <b>Smart Search &amp; Vibe Hosting</b>: your TLD is suggested in AI Search and the search bar, and offered when a new app on Vibe Hosting, our AI app builder, needs a domain.',
-    '📣 <b>Boosted ads</b> on Facebook &amp; Google, and 🎁 <b>co-branded merchandise</b> at around 10 industry events a year.'
+    '<b>Registration Guarantee</b> (Diamond): we commit to a minimum number of new registrations. If we fall short, the gap becomes credit toward your 2028 package.',
+    '<b>Bundle placements</b>: Gold gets a combo card next to .COM / .NET / .VN in search results; Diamond gets the cart pop-up offering your TLD free for the first year.',
+    '<b>Smart Search &amp; Vibe Hosting</b>: your TLD is suggested in AI Search and the search bar, and offered when a new app on Vibe Hosting, our AI app builder, needs a domain.',
+    '<b>Boosted ads</b> on Facebook &amp; Google, and <b>co-branded merchandise</b> at around 10 industry events a year.'
   ]);
   const slotsTable = (k, withLeft) => TABLE(TH('Package') + TH('Cost / 12 months', 1) + (k.eb ? TH(`Early bird (${k.pct}% off)`, 1) : '') + TH(withLeft ? 'Slots left' : 'Slots', 1),
     ['diamond', 'gold', 'silver'].map((p) => `<tr>${TD('<b>' + planName(p) + '</b>')}${TD(money(k.plans[p].list), 1)}${k.eb ? TD(money(k.plans[p].eb), 1) : ''}${TD(withLeft ? `${k.plans[p].left} of ${k.plans[p].slots}` : String(k.plans[p].slots), 1)}</tr>`));
@@ -231,16 +231,15 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: `Mat Bao MDF 2027: ${c.label} 2026 Results & Your Exclusive Offer`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P('I hope this email finds you well.'),
-          P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026, together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
-          ...(c.results && c.results.length ? [H('📊', `${esc(c.label)} at Mat Bao in 2026`), UL(c.results)] : []),
-          hasPdf(c) && c.pdfToken ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:2px 0 14px;"><tr><td style="background:#0b1550;border-radius:8px;"><a href="${baseUrl}/r/${c.pdfToken}" style="display:inline-block;padding:11px 20px;font-family:${FONT};font-size:11pt;font-weight:bold;color:#ffffff;text-decoration:none;">📄 Download your 2026 report (PDF)</a></td></tr></table>` : '',
-          H('✨', 'What’s new in MDF 2027: Beyond Visibility, Guaranteed Growth'), P('Every 2027 package is measured by new registrations of your TLD, not just impressions:'), whatsNew(),
-          H('🚀', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '',
+          P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026 (attached as PDF), together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
+          ...(c.results && c.results.length ? [H('', `${esc(c.label)} at Mat Bao in 2026`), UL(c.results)] : []),
+          H('', 'What’s new in MDF 2027: Beyond Visibility, Guaranteed Growth'), P('Every 2027 package is measured by new registrations of your TLD, not just impressions:'), whatsNew(),
+          H('', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '',
           TABLE(TH('Package (offer)') + TH('Qty', 1) + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (${k.pct}% off)` : 'Early bird', 1) + TH('Total', 1), [
             `<tr>${TD(`<b>${planName(c.plan)}</b> · ${esc(c.label)}`)}${TD('1', 1)}${TD(money(pl.list), 1)}${TD(k.eb ? 'Yes, until ' + k.ebShort : '–', 1)}${TD(money(price), 1, 1)}</tr>`,
             `<tr>${TD('TOTAL', 0, 1, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD(money(price), 1, 1, '#f3f5fb')}</tr>`]),
           NOTE(`${planName(c.plan)} has ${pl.slots} slots in 2027. Half-year billing is also available; ${ebLine(k)}.`),
-          H('📅', 'Key dates'), datesBox(k), H('📝', 'How to register'), howTo('<b>' + esc((c.tlds && c.tlds[0]) || 'your TLD') + '</b>'),
+          H('', 'Key dates'), datesBox(k), H('', 'How to register'), howTo('<b>' + esc((c.tlds && c.tlds[0]) || 'your TLD') + '</b>'),
           P(`Let’s keep growing ${esc(c.label)} in Vietnam together in 2027!`, 'font-weight:bold;')]
       };
     },
@@ -250,9 +249,9 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
         subject: `Mat Bao MDF 2027: Beyond Visibility, Guaranteed Growth - Registration Opens ${k.startTxt.replace(/ \d{4}$/, '')}`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P('I hope this email finds you well.'),
           P(`Every year Mat Bao invites our registry partners to the MDF Program to grow their TLDs in the Vietnamese market, and I am delighted to invite ${name} to the <b>Mat Bao MDF 2027 Program</b>. Registration opens on <b>${k.startTxt}</b>.`),
-          H('✨', 'Beyond Visibility, Guaranteed Growth'), P('In 2027 we move beyond awareness: every package is measured by new registrations of your TLD, and your TLD appears at the moments customers choose a domain.'), whatsNew(),
-          H('💼', 'Packages'), slotsTable(k, false), NOTE(`The full benefit comparison is on the MDF 2027 page. Half-year billing is also available; ${ebLine(k)}.`),
-          H('📅', 'Key dates'), datesBox(k), H('📝', 'How to register'), howTo('your TLD'),
+          H('', 'Beyond Visibility, Guaranteed Growth'), P('In 2027 we move beyond awareness: every package is measured by new registrations of your TLD, and your TLD appears at the moments customers choose a domain.'), whatsNew(),
+          H('', 'Packages'), slotsTable(k, false), NOTE(`The full benefit comparison is on the MDF 2027 page. Half-year billing is also available; ${ebLine(k)}.`),
+          H('', 'Key dates'), datesBox(k), H('', 'How to register'), howTo('your TLD'),
           P(`If you would like our recommendation for ${name}, just reply to this email and we will put one together. We look forward to growing with you in 2027!`, 'font-weight:bold;')]
       };
     },
@@ -261,7 +260,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: 'Mat Bao MDF 2027: Registration Is Now Open',
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`Registration for the <b>Mat Bao MDF 2027 Program</b> opened on ${k.startDay}. Slots are confirmed first come, first served${k.eb ? `, and the ${k.pct}% early bird price runs until <b>${k.ebDay}</b>` : ''}.`),
-          rec, H('💼', 'Slots available today'), slotsTable(k, true), H('📝', 'Book in a few minutes'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
+          rec, H('', 'Slots available today'), slotsTable(k, true), H('', 'Book in a few minutes'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('Happy to answer any questions or walk you through the packages on a short call.')]
       };
     },
@@ -270,7 +269,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
         subject: `Mat Bao MDF 2027: Early Bird Price Ends ${k.ebDay}`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`A quick reminder: the <b>${k.pct}% early bird price</b> for Mat Bao MDF 2027 ends on <b>${k.ebDay}</b> (GMT+7). After that, annual plans return to the list price.`),
           c.plan ? P(`For ${esc(c.label)} we recommend <b>${planName(c.plan)}</b>: ${money(k.plans[c.plan].eb)} instead of ${money(k.plans[c.plan].list)} per year.`) : '',
-          H('💼', 'Prices and slots left today'), slotsTable(k, true), H('📝', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
+          H('', 'Prices and slots left today'), slotsTable(k, true), H('', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('If anything is holding you back, reply to this email and we will help.')]
       };
     },
@@ -278,7 +277,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: `Mat Bao MDF 2027: Registration Closes ${k.endDay}`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`Registration for <b>Mat Bao MDF 2027</b> closes on <b>${k.endDay}</b> (GMT+7). The programme runs from January to December 2027, and slots that are not booked by then will not reopen this year.`),
-          H('💼', 'Slots left today'), slotsTable(k, true), H('📝', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
+          H('', 'Slots left today'), slotsTable(k, true), H('', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('We would be glad to have you with us in 2027. Reply to this email if you have any questions.')]
       };
     },
@@ -289,7 +288,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
         subject: 'Mat Bao MDF 2027: Thank You and Next Steps',
         inner: [P(`<b>${esc(c.greet)}</b>`), P('Thank you for joining the <b>Mat Bao MDF 2027 Program</b>. Here is a summary of your registration and what happens next.'),
           TABLE(TH('TLD') + TH('Package') + TH('Status') + TH('Ref', 1), regs.map((r) => `<tr>${TD('<b>' + esc(r.tlds.join(', ')) + '</b>')}${TD(planName(r.plan) + (r.billing === 'half' ? ' · half-year' : ''))}${TD(ST[r.status] || r.status)}${TD(esc(r.ref), 1)}</tr>`)),
-          H('🗓️', 'Next steps'), OL(['Agreement and invoice: we will send them in the coming days, together with the Registrar Obligation for each package.',
+          H('', 'Next steps'), OL(['Agreement and invoice: we will send them in the coming days, together with the Registrar Obligation for each package.',
             'Kick-off in January 2027: we agree on campaign timing, creative assets and, for Diamond, the Registration Guarantee floor.',
             'Monthly updates: you receive the performance of your TLD at Mat Bao throughout the year.']),
           regs.some((r) => r.status === 'waitlist') ? NOTE('For packages on the waitlist, we will contact you as soon as a slot becomes available.') : '',
@@ -333,7 +332,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
     const c = list.find((x) => x.id === contactId) || list[0];
     if (!c) return null;
     const m = buildEmail(waveKey, c);
-    const head = `<div style="font:13px/1.5 Arial,sans-serif;background:#f3f5fb;border-bottom:1px solid #d9def0;padding:10px 14px;margin:0 0 12px;"><b>Subject:</b> ${esc(m.subject)}<br><b>To:</b> ${esc(m.to.map((r) => r.email).join(', ') || '(chưa có)')}<br><b>Cc:</b> ${esc(m.cc.map((r) => r.email).join(', '))}${c.group === 'partner' && w.tpl === 'offer' && hasPdf(c) && c.pdfToken ? '<br><b>Report link:</b> ' + esc(baseUrl + '/r/' + c.pdfToken) : ''}</div>`;
+    const head = `<div style="font:13px/1.5 Arial,sans-serif;background:#f3f5fb;border-bottom:1px solid #d9def0;padding:10px 14px;margin:0 0 12px;"><b>Subject:</b> ${esc(m.subject)}<br><b>To:</b> ${esc(m.to.map((r) => r.email).join(', ') || '(chưa có)')}<br><b>Cc:</b> ${esc(m.cc.map((r) => r.email).join(', '))}${w.tpl === 'offer' && hasPdf(c) ? '<br><b>Attach:</b> Mat Bao MDF 2026 Results - ' + esc(c.label) + '.pdf (tab Báo cáo 2026)' : ''}</div>`;
     return m.html.split(baseUrl + '/images/').join('/images/').replace('<body style="margin:0;padding:0;background:#ffffff;">', '<body style="margin:0;padding:0 12px;background:#ffffff;">' + head);
   }
 
@@ -406,13 +405,25 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       contacts: db.outreach.contacts.map((c) => Object.assign({}, c, { registered: registrationsOf(c).map((r) => ({ tld: r.tlds[0], plan: r.plan, status: r.status })), hasPdf: hasPdf(c) }))
     };
   }
+  // Parts of one email for copy and paste into a new Outlook message (works in every Outlook version).
+  function emailParts(waveKey, contactId) {
+    const w = WAVES.find((x) => x.key === waveKey);
+    if (!w || !w.tpl) return null;
+    const list = db.outreach.contacts.filter((c) => inAudience(c, w.audience));
+    const c = list.find((x) => x.id === contactId) || list[0];
+    if (!c) return null;
+    const m = buildEmail(waveKey, c);
+    const addr = (l) => l.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email)).join('; ');
+    const body = m.html.replace(/^[\s\S]*?<body[^>]*>/, '').replace(/<\/body>[\s\S]*$/, '');
+    return { contact: c.id, name: c.name, to: addr(m.to), cc: addr(m.cc), subject: m.subject, html: body, text: m.text, pdf: w.tpl === 'offer' && hasPdf(c) ? c.pdf + '.pdf' : '' };
+  }
   // Private report link: /r/<token> serves that registry's PDF only.
   function reportByToken(tok) {
     const c = db.outreach.contacts.find((x) => x.pdfToken && x.pdfToken === tok);
     if (!c || !hasPdf(c)) return null;
     return { path: path.join(REPORTS, c.pdf + '.pdf'), filename: `Mat Bao MDF 2026 Results - ${c.label}.pdf`, name: c.name };
   }
-  return { summary, waveZip, preview, importBundle, updateContact, updateWave, reportFile, reportByToken };
+  return { summary, waveZip, preview, emailParts, importBundle, updateContact, updateWave, reportFile, reportByToken };
 }
 
 module.exports = { createOutreach, writeMsg, writeEml, zip };
