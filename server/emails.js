@@ -110,13 +110,15 @@ ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-b
   function linesTable(regs, lang, withStatus) {
     const vi = lang === 'vi';
     const ST = vi ? { on_hold: 'Đang giữ chỗ', waitlist: 'Danh sách chờ', unverified: 'Chờ xác thực' } : { on_hold: 'On hold', waitlist: 'Waitlist', unverified: 'Awaiting email confirmation' };
-    const unit = regs[0].billing === 'half' ? (vi ? '/nửa năm' : '/half-year') : (vi ? '/năm' : '/year');
+    const unitOf = (r) => (r.billing === 'half' ? (vi ? '/nửa năm' : '/half-year') : (vi ? '/năm' : '/year'));
+    const mixed = new Set(regs.map((r) => r.billing)).size > 1;
+    const unit = mixed ? '' : unitOf(regs[0]);
     const total = regs.reduce((n, r) => n + r.price, 0);
     const cell = `font:400 14px/21px ${FONT};color:${C.body};padding:11px 14px;`;
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${C.panel}" style="background:${C.panel};border:1px solid ${C.line};border-radius:12px;margin:8px 0 18px;">
 <tr><td style="${cell}color:${C.mute};font-size:12px;">TLD</td><td style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Gói' : 'Package'}</td><td align="right" style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Giá' : 'Price'}</td>${withStatus ? `<td style="${cell}color:${C.mute};font-size:12px;">${vi ? 'Trạng thái' : 'Status'}</td>` : ''}</tr>
-${regs.map((r) => `<tr><td style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${esc(r.tlds.join(', '))}</b><br><span style="font-size:12px;color:${C.mute};">${esc(r.ref)}</span></td><td style="${cell}border-top:1px solid ${C.line};">${planTag(r.plan)}</td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;">${money(r.price)}${unit}</td>${withStatus ? `<td style="${cell}border-top:1px solid ${C.line};color:${r.status === 'waitlist' ? '#ffcf4d' : C.cyan};">${ST[r.status] || r.status}</td>` : ''}</tr>`).join('')}
-${regs.length > 1 ? `<tr><td colspan="2" style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${vi ? 'Tổng' : 'Total'}</b></td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;"><b style="color:${C.ink};">${money(total)}${unit}</b></td>${withStatus ? `<td style="border-top:1px solid ${C.line};"></td>` : ''}</tr>` : ''}
+${regs.map((r) => `<tr><td style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${esc(r.tlds.join(', '))}</b><br><span style="font-size:12px;color:${C.mute};">${esc(r.ref)}</span></td><td style="${cell}border-top:1px solid ${C.line};">${planTag(r.plan)}</td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;">${money(r.price)}${unitOf(r)}</td>${withStatus ? `<td style="${cell}border-top:1px solid ${C.line};color:${r.status === 'waitlist' ? '#ffcf4d' : C.cyan};">${ST[r.status] || r.status}</td>` : ''}</tr>`).join('')}
+${regs.length > 1 ? `<tr><td colspan="2" style="${cell}border-top:1px solid ${C.line};"><b style="color:${C.ink};">${mixed ? (vi ? 'Thanh toán đợt đầu' : 'First payment') : (vi ? 'Tổng' : 'Total')}</b></td><td align="right" style="${cell}border-top:1px solid ${C.line};white-space:nowrap;"><b style="color:${C.ink};">${money(total)}${unit}</b></td>${withStatus ? `<td style="border-top:1px solid ${C.line};"></td>` : ''}</tr>` : ''}
 <tr><td colspan="${withStatus ? 4 : 3}" style="${cell}border-top:1px solid ${C.line};font-size:13px;color:${C.mute};">${esc(regs[0].registry)} · ${esc(regs[0].contactName)} · ${esc(regs[0].email)}</td></tr></table>`;
   }
 

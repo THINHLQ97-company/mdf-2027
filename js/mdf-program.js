@@ -203,17 +203,17 @@
   var BK_STEPS = ['plan', 'details', 'review'];
   var bk = {
     step: 0, done: null, errors: {},
-    lines: [{ tld: '', plan: '' }], billing: 'annual',
+    lines: [{ tld: '', plan: '', billing: 'annual' }],
     registry: '', contactName: '', jobTitle: '', email: '', phone: '', participated: '', notes: '', consent: false
   };
-  var BK_FIELDS = ['billing', 'registry', 'contactName', 'jobTitle', 'email', 'phone', 'participated', 'notes'];
+  var BK_FIELDS = ['registry', 'contactName', 'jobTitle', 'email', 'phone', 'participated', 'notes'];
 
   function loadDraft() {
     try {
       var d = JSON.parse(window.localStorage.getItem(DRAFT_KEY) || 'null');
       if (!d) return;
       BK_FIELDS.forEach(function (k) { if (typeof d[k] === 'string') bk[k] = d[k]; });
-      if (Array.isArray(d.lines) && d.lines.length) bk.lines = d.lines.slice(0, MAX_LINES).map(function (l) { return { tld: String(l.tld || ''), plan: String(l.plan || '') }; });
+      if (Array.isArray(d.lines) && d.lines.length) bk.lines = d.lines.slice(0, MAX_LINES).map(function (l) { return { tld: String(l.tld || ''), plan: String(l.plan || ''), billing: (l.billing || d.billing) === 'half' ? 'half' : 'annual' }; });
     } catch (e) { /* storage blocked: start empty */ }
   }
   function saveDraft() {
@@ -233,18 +233,20 @@
   function normTld(x) { x = String(x || '').trim().toLowerCase(); return x ? (x.charAt(0) === '.' ? x : '.' + x) : ''; }
   function validTld(x) { return /^\.[\p{L}\p{N}-]{2,63}$/u.test(x); }
   function lineTlds() { return bk.lines.map(function (l) { return normTld(l.tld); }).filter(Boolean); }
-  function priceLine(p) { var half = bk.billing === 'half'; return half ? p.half : priceOf(p); }
+  function priceLine(p, billing) { return billing === 'half' ? p.half : priceOf(p); }
+  function unitOf(billing) { return billing === 'half' ? '/half-year' : '/year'; }
   // Priced lines, in order, flagging those that would go to the waitlist because the cart takes more slots than are free.
   function cart() {
     var used = {}, out = [], total = 0;
     bk.lines.forEach(function (l, i) {
       var p = planOf(l.plan); if (!p) return;
       used[p.key] = (used[p.key] || 0) + 1;
-      var amount = priceLine(p); total += amount;
-      out.push({ i: i, tld: normTld(l.tld), plan: p, amount: amount, waitlist: used[p.key] > Math.max(0, p.slots) });
+      var billing = l.billing === 'half' ? 'half' : 'annual', amount = priceLine(p, billing); total += amount;
+      out.push({ i: i, tld: normTld(l.tld), plan: p, billing: billing, unit: unitOf(billing), amount: amount, early: billing === 'annual' && isEarlyBird(), waitlist: used[p.key] > Math.max(0, p.slots) });
     });
-    var half = bk.billing === 'half';
-    return { lines: out, total: total, unit: half ? '/half-year' : '/year', early: !half && isEarlyBird() };
+    var units = out.map(function (x) { return x.unit; }).filter(function (u, i, a) { return a.indexOf(u) === i; });
+    // Mixed cycles: the total is the first payment, so no single unit applies.
+    return { lines: out, total: total, unit: units.length === 1 ? units[0] : '', mixed: units.length > 1, early: out.some(function (x) { return x.early; }) };
   }
 
   function validate(step) {
@@ -308,16 +310,15 @@
           PACKAGES.map(function (p) {
             var on = l.plan === p.key;
             return '<label class="bk-chip ' + p.key + (on ? ' sel' : '') + (p.slots <= 0 ? ' full' : '') + '"><input type="radio" name="bk-li-' + i + '" value="' + p.key + '"' + (on ? ' checked' : '') + '>' +
-              '<span class="nm">' + p.key.toUpperCase() + '</span><span class="pr">' + money(priceLine(p)) + '</span><span class="sl">' + (p.slots > 0 ? p.slots + ' left' : 'Waitlist') + '</span></label>';
+              '<span class="nm">' + p.key.toUpperCase() + '</span><span class="pr">' + money(priceLine(p, l.billing)) + '</span><span class="sl">' + (p.slots > 0 ? p.slots + ' left' : 'Waitlist') + '</span></label>';
           }).join('') + '</div>' + err('plan' + i) +
+          '<div class="bk-line-bill"><span class="bk-lbl" id="bl-lbl-' + i + '">Billing</span><div class="bk-seg sm" role="radiogroup" aria-labelledby="bl-lbl-' + i + '">' +
+          '<label class="' + (l.billing !== 'half' ? 'sel' : '') + '"><input type="radio" name="bk-bill-' + i + '" value="annual"' + (l.billing !== 'half' ? ' checked' : '') + '>Annual</label>' +
+          '<label class="' + (l.billing === 'half' ? 'sel' : '') + '"><input type="radio" name="bk-bill-' + i + '" value="half"' + (l.billing === 'half' ? ' checked' : '') + '>Half-year</label></div>' +
+          (l.plan === 'diamond' && l.billing === 'half' ? '<span class="bk-warn">Registration Guarantee applies to annual Diamond only.</span>' : (l.billing !== 'half' && isEarlyBird() ? '<span class="bk-hint">Early bird price</span>' : '')) + '</div>' +
           (wl[i] ? '<p class="bk-warn">No free ' + esc(l.plan.toUpperCase()) + ' slot for this TLD: it will join the waitlist.</p>' : '') + '</div></div></div>';
       }).join('') + '</div>' +
       (bk.lines.length < MAX_LINES ? '<button type="button" class="bk-add" data-li-add>+ Add another TLD</button>' : '<p class="bk-hint">Up to ' + MAX_LINES + ' TLDs per registration. Email marcom@matbao.com for more.</p>');
-    var anyDiamond = bk.lines.some(function (l) { return l.plan === 'diamond'; });
-    h += '<div class="bk-field"><span class="bk-lbl" id="bill-lbl">Billing cycle (all TLDs)</span><div class="bk-seg" role="radiogroup" aria-labelledby="bill-lbl">' +
-      '<label class="' + (bk.billing === 'annual' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="annual"' + (bk.billing === 'annual' ? ' checked' : '') + '>Annual</label>' +
-      '<label class="' + (bk.billing === 'half' ? 'sel' : '') + '"><input type="radio" name="bk-billing" value="half"' + (bk.billing === 'half' ? ' checked' : '') + '>Half-year</label></div>' +
-      (anyDiamond && bk.billing === 'half' ? '<p class="bk-warn">The Registration Guarantee applies to annual Diamond plans only.</p>' : '') + '</div>';
     h += '<div class="bk-actions"><button type="button" class="bk-btn primary" data-bk-act="next">Continue</button></div>';
     return h;
   }
@@ -345,11 +346,11 @@
   function renderReviewStep() {
     var c = cart();
     var lines = c.lines.map(function (x) {
-      return '<span class="bk-rl"><b>' + esc(x.tld) + '</b> · ' + esc(x.plan.key.toUpperCase()) + ' · ' + money(x.amount) + esc(c.unit) + (x.waitlist ? ' <span class="pill wl">Waitlist</span>' : '') + '</span>';
+      return '<span class="bk-rl"><b>' + esc(x.tld) + '</b> · ' + esc(x.plan.key.toUpperCase()) + ' · ' + money(x.amount) + esc(x.unit) + (x.waitlist ? ' <span class="pill wl">Waitlist</span>' : '') + '</span>';
     }).join('');
     var h = '<dl class="bk-review">' +
       row(c.lines.length > 1 ? 'TLDs & packages' : 'TLD & package', lines + (c.early ? '<span class="pill">Early bird</span>' : ''), 0) +
-      (c.lines.length > 1 ? row('Total', '<b>' + money(c.total) + esc(c.unit) + '</b>', 0) : '') +
+      (c.lines.length > 1 ? row(c.mixed ? 'First payment' : 'Total', '<b>' + money(c.total) + esc(c.unit) + '</b>', 0) : '') +
       row('Registry', esc(bk.registry), 1) +
       row('Contact', esc(bk.contactName) + (bk.jobTitle ? ', ' + esc(bk.jobTitle) : '') + '<br>' + esc(bk.email) + (bk.phone ? ' · ' + esc(bk.phone) : ''), 1) +
       row('Joined in 2026', bk.participated === 'yes' ? 'Yes' : 'No', 1) +
@@ -385,18 +386,18 @@
     var bar = document.getElementById('mdf-sumbar');
     if (bar) {
       bar.hidden = !c.lines.length || !!bk.done;
-      if (c.lines.length) bar.innerHTML = '<span class="pl">' + (c.lines.length === 1 ? '<span class="' + c.lines[0].plan.key + '">' + c.lines[0].plan.key.toUpperCase() + '</span>' : c.lines.length + ' TLDs') + '</span><b>' + money(c.total) + '<small>' + c.unit + '</small></b><span class="sl">' + c.lines.map(function (x) { return esc(x.tld || '?'); }).join(' · ') + '</span>';
+      if (c.lines.length) bar.innerHTML = '<span class="pl">' + (c.lines.length === 1 ? '<span class="' + c.lines[0].plan.key + '">' + c.lines[0].plan.key.toUpperCase() + '</span>' : c.lines.length + ' TLDs') + '</span><b>' + money(c.total) + '<small>' + (c.mixed ? ' total' : c.unit) + '</small></b><span class="sl">' + c.lines.map(function (x) { return esc(x.tld || '?'); }).join(' · ') + '</span>';
     }
     var h = '<strong>Your reservation</strong>';
     if (!c.lines.length) {
       h += '<p class="bk-sum-empty">Add a TLD and choose a package to see your price and available slots.</p>';
     } else {
       h += '<ul class="bk-sum-lines">' + c.lines.map(function (x) {
-        return '<li><span class="t">' + esc(x.tld || 'TLD ' + (x.i + 1)) + '</span><span class="bk-sum-plan ' + x.plan.key + '">' + x.plan.key.toUpperCase() + '</span><span class="a">' + money(x.amount) + '</span>' +
+        return '<li><span class="t">' + esc(x.tld || 'TLD ' + (x.i + 1)) + '</span><span class="bk-sum-plan ' + x.plan.key + '">' + x.plan.key.toUpperCase() + '</span><span class="a">' + money(x.amount) + '<small>' + (x.billing === 'half' ? '/6 mo' : '/yr') + '</small></span>' +
           (x.waitlist ? '<em>Waitlist</em>' : '') + '</li>';
       }).join('') + '</ul>' +
-        '<div class="bk-sum-price">' + money(c.total) + '<small>' + c.unit + '</small></div>' +
-        (c.early ? '<div class="bk-sum-save">Early bird: you save ' + money(c.lines.reduce(function (n, x) { return n + x.plan.list - priceOf(x.plan); }, 0)) + '</div>' : '') +
+        '<div class="bk-sum-price">' + money(c.total) + '<small>' + (c.mixed ? ' first payment' : c.unit) + '</small></div>' +
+        (c.early ? '<div class="bk-sum-save">Early bird: you save ' + money(c.lines.reduce(function (n, x) { return n + (x.early ? x.plan.list - priceOf(x.plan) : 0); }, 0)) + '</div>' : '') +
         '<ul class="bk-sum-list">' + PACKAGES.filter(function (p) { return c.lines.some(function (x) { return x.plan.key === p.key; }); }).map(function (p) { return '<li>' + p.key.toUpperCase() + ': ' + slotText(p) + ' (of ' + p.total + ')</li>'; }).join('') +
         '<li>Slots held once you confirm your email · Mat Bao confirms within ' + HOLD_HOURS + ' hours</li></ul>';
     }
@@ -429,7 +430,7 @@
     if (planOf(key)) {
       var free = bk.lines.filter(function (l) { return !l.plan; })[0];
       if (free) free.plan = key;
-      else if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: key });
+      else if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: key, billing: 'annual' });
       bk.step = 0; bk.errors = {}; bk.done = null; saveDraft();
     }
     setActive('sec-book');
@@ -442,7 +443,7 @@
     var go = t.closest('[data-bk-go]');
     if (go) { bk.step = +go.getAttribute('data-bk-go'); bk.errors = {}; renderForm(); return; }
     if (t.closest('[data-li-add]')) {
-      if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: '' });
+      if (bk.lines.length < MAX_LINES) bk.lines.push({ tld: '', plan: '', billing: 'annual' });
       saveDraft(); renderForm();
       var inp = document.getElementById('bk-tld-' + (bk.lines.length - 1)); if (inp) inp.focus();
       return;
@@ -462,7 +463,7 @@
       btn.disabled = true; btn.textContent = 'Reserving…';
       var c = cart();
       var payload = {
-        items: c.lines.map(function (x) { return { tld: x.tld, plan: x.plan.key }; }), billing: bk.billing,
+        items: c.lines.map(function (x) { return { tld: x.tld, plan: x.plan.key, billing: x.billing }; }),
         registry: bk.registry.trim(), contactName: bk.contactName.trim(), jobTitle: bk.jobTitle.trim(),
         email: bk.email.trim(), phone: bk.phone.trim(), participated2026: bk.participated === 'yes', notes: bk.notes.trim(),
         submittedAt: new Date().toISOString(), consent: true,
@@ -485,7 +486,7 @@
         renderForm();
       });
     } else if (act === 'restart') {
-      bk.done = null; bk.step = 0; bk.lines = [{ tld: '', plan: '' }]; bk.consent = false; bk.notes = ''; bk.errors = {};
+      bk.done = null; bk.step = 0; bk.lines = [{ tld: '', plan: '', billing: 'annual' }]; bk.consent = false; bk.notes = ''; bk.errors = {};
       renderForm();
     }
   });
@@ -509,7 +510,7 @@
     if (!el.closest || !el.closest('#mdf-form')) return;
     var m = /^bk-li-(\d+)$/.exec(el.name || '');
     if (m) { bk.lines[+m[1]].plan = el.value; delete bk.errors['plan' + m[1]]; }
-    else if (el.name === 'bk-billing') bk.billing = el.value;
+    else if ((m = /^bk-bill-(\d+)$/.exec(el.name || ''))) bk.lines[+m[1]].billing = el.value === 'half' ? 'half' : 'annual';
     else if (el.name === 'bk-part') { bk.participated = el.value; delete bk.errors.participated; }
     else if (el.id === 'bk-consent') { bk.consent = el.checked; delete bk.errors.consent; }
     else if (el.getAttribute('data-li-tld') != null) { el.value = normTld(el.value); bk.lines[+el.getAttribute('data-li-tld')].tld = el.value; saveDraft(); renderSummary(); return; }

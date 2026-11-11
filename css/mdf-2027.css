@@ -785,3 +785,11 @@ body.ob-open { overflow: hidden; }
 @media (max-width: 900px) {
   .t-mdf-program .bk-line-body { grid-template-columns: 1fr; gap: 10px; }
 }
+
+/* Per-TLD billing cycle */
+.t-mdf-program .bk-line-bill { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; }
+.t-mdf-program .bk-line-bill .bk-lbl { margin: 0; font-size: 13px; color: rgba(255,255,255,.75); }
+.t-mdf-program .bk-seg.sm { padding: 3px; }
+.t-mdf-program .bk-seg.sm label { padding: 5px 12px; font-size: 13px; }
+.t-mdf-program .bk-line-bill .bk-hint, .t-mdf-program .bk-line-bill .bk-warn { margin: 0; font-size: 12px; }
+.t-mdf-program .bk-sum-lines .a small { font-size: 11px; opacity: .7; margin-left: 2px; }

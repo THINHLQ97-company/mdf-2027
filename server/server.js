@@ -157,12 +157,12 @@ async function register(req, res) {
   const state = programState(s);
   if (state !== 'open') return send(res, 409, { error: state === 'upcoming' ? `Registration opens on ${fmt(s.program.startAt)}.` : 'Registration for MDF 2027 is closed.' });
 
-  const billing = b.billing === 'half' ? 'half' : 'annual';
+  const cycle = (v) => (v === 'half' ? 'half' : 'annual');
   const email = String(b.email || '').trim().toLowerCase();
   const normTld = (x) => { x = String(x || '').trim().toLowerCase(); return x ? (x[0] === '.' ? x : '.' + x) : ''; };
   // New form sends items [{ tld, plan }]: one package per TLD. Older clients sent one plan + several TLDs.
-  let items = Array.isArray(b.items) ? b.items.map((x) => ({ tld: normTld(x && x.tld), plan: String((x && x.plan) || '') }))
-    : (Array.isArray(b.tlds) ? b.tlds : []).map((t) => ({ tld: normTld(t), plan: String(b.plan || '') }));
+  let items = Array.isArray(b.items) ? b.items.map((x) => ({ tld: normTld(x && x.tld), plan: String((x && x.plan) || ''), billing: cycle((x && x.billing) || b.billing) }))
+    : (Array.isArray(b.tlds) ? b.tlds : []).map((t) => ({ tld: normTld(t), plan: String(b.plan || ''), billing: cycle(b.billing) }));
   items = items.filter((x) => x.tld || x.plan).slice(0, 5);
   const text = (v, max) => String(v || '').trim().slice(0, max);
   const errors = {};
@@ -196,7 +196,7 @@ async function register(req, res) {
 
   const groupId = crypto.randomUUID(), verifyToken = token(), at = iso(now()), verifyExpiresAt = iso(now() + s.verifyHours * 3600e3);
   const group = items.map((x) => {
-    const { price, earlyBird } = priceFor(x.plan, billing);
+    const billing = x.billing, { price, earlyBird } = priceFor(x.plan, billing);
     return {
       id: crypto.randomUUID(), ref: nextRef(x.plan), groupId, status: 'unverified',
       plan: x.plan, billing, price, earlyBird,

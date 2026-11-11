@@ -211,6 +211,17 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   function dt(s) { return s ? new Date(s).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' }) : '–'; }
   function localInput(s) { if (!s) return ''; var d = new Date(new Date(s).getTime() + 7 * 3600e3); return d.toISOString().slice(0, 16); }
   function fromLocal(v) { return v ? v + ':00+07:00' : null; }
+  // Early bird runs N days from the opening day and ends at 23:59:59 (GMT+7) of day N; 0 days = no early bird.
+  function vnDay(iso) { return new Date(new Date(iso).getTime() + 7 * 3600e3).toISOString().slice(0, 10); }
+  function ebUntil(startIso, days) {
+    if (!(days > 0)) return startIso;
+    var d = new Date(vnDay(startIso) + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days - 1);
+    return d.toISOString().slice(0, 10) + 'T23:59:59+07:00';
+  }
+  function ebDays(p) {
+    if (new Date(p.earlyBirdUntil) <= new Date(p.startAt)) return 0;
+    return Math.round((new Date(vnDay(p.earlyBirdUntil) + 'T00:00:00Z') - new Date(vnDay(p.startAt) + 'T00:00:00Z')) / 864e5) + 1;
+  }
   // Registrations sent together (one TLD each) share a groupId.
   function groupNote(r) {
     if (!r.groupId || !D) return '';
@@ -357,7 +368,8 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     h += '<section class="panel"><h2>Thời gian (giờ Việt Nam)</h2>' +
       '<label class="f">Mở đăng ký<input class="i" type="datetime-local" id="s-start" value="' + localInput(p.startAt) + '" required></label>' +
       '<label class="f">Đóng đăng ký<input class="i" type="datetime-local" id="s-end" value="' + localInput(p.endAt) + '" required></label>' +
-      '<label class="f">Early bird đến<input class="i" type="datetime-local" id="s-eb" value="' + localInput(p.earlyBirdUntil) + '" required></label>' +
+      '<label class="f">Số ngày nhận giá early bird (tính cả ngày mở)<input class="i" type="number" id="s-ebdays" min="0" max="60" step="1" value="' + ebDays(p) + '" required></label>' +
+      '<p class="hint" id="s-eb-out"></p>' +
       '<label class="f">Mức giảm early bird (%)<input class="i" type="number" id="s-ebpct" min="0" max="50" step="0.5" value="' + p.earlyBirdPct + '"></label>' +
       '<p class="hint">Trước giờ mở và sau giờ đóng, form trên trang tự khoá. Giá early bird chỉ áp dụng gói cả năm.</p></section>';
     h += '<section class="panel"><h2>Gói và số suất</h2><table class="plans-edit"><thead><tr><th></th><th>Giá năm ($)</th><th>Nửa năm ($)</th><th>Số suất</th></tr></thead><tbody>' +
@@ -450,12 +462,18 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     var te = c.querySelector('[data-act="test-email"]');
     if (te) te.addEventListener('click', function () { api('test-email', { to: $('#s-test').value }).then(function () { toast('Đã gửi email thử'); load(); }).catch(function (e) { toast(e.message, true); }); });
     var f = c.querySelector('#set-form');
+    function ebOut() {
+      var o = $('#s-eb-out'); if (!o) return;
+      var st = fromLocal($('#s-start').value), n = Math.max(0, Math.round(Number($('#s-ebdays').value) || 0));
+      o.textContent = !st ? '' : (n ? 'Giá early bird áp dụng đến hết ' + dt(ebUntil(st, n)) + '.' : 'Không áp dụng early bird.');
+    }
+    if (f) { ['#s-start', '#s-ebdays'].forEach(function (q) { var el = $(q); if (el) el.addEventListener('input', ebOut); }); ebOut(); }
     if (f) f.addEventListener('submit', function (e) {
       e.preventDefault();
       var plans = {}; PLANS.forEach(function (k) { plans[k] = {}; });
       f.querySelectorAll('[data-plan]').forEach(function (i) { plans[i.getAttribute('data-plan')][i.getAttribute('data-f')] = Number(i.value); });
       var body = {
-        program: { startAt: fromLocal($('#s-start').value), endAt: fromLocal($('#s-end').value), earlyBirdUntil: fromLocal($('#s-eb').value), earlyBirdPct: Number($('#s-ebpct').value) },
+        program: { startAt: fromLocal($('#s-start').value), endAt: fromLocal($('#s-end').value), earlyBirdUntil: ebUntil(fromLocal($('#s-start').value), Math.max(0, Math.round(Number($('#s-ebdays').value) || 0))), earlyBirdPct: Number($('#s-ebpct').value) },
         plans: plans, holdHours: Number($('#s-hold').value), verifyHours: Number($('#s-verify').value), maxActivePerDomain: Number($('#s-dom').value),
         teamEmails: $('#s-team').value.split(/[\s,;]+/).filter(Boolean), replyTo: $('#s-reply').value
       };
