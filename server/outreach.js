@@ -222,6 +222,16 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
   ]);
   const slotsTable = (k, withLeft) => TABLE(TH('Package') + TH('Cost / 12 months', 1) + (k.eb ? TH(`Early bird (${k.pct}% off)`, 1) : '') + TH(withLeft ? 'Slots left' : 'Slots', 1),
     ['diamond', 'gold', 'silver'].map((p) => `<tr>${TD('<b>' + planName(p) + '</b>')}${TD(money(k.plans[p].list), 1)}${k.eb ? TD(money(k.plans[p].eb), 1) : ''}${TD(withLeft ? `${k.plans[p].left} of ${k.plans[p].slots}` : String(k.plans[p].slots), 1)}</tr>`));
+  // Gold and Diamond: the bundle is optional; a registry can skip it, discuss later and pay less.
+  function bundleNote(c, short) {
+    if (!['gold', 'diamond'].includes(c.plan)) return '';
+    const label = esc(c.label || 'your TLD');
+    const what = c.plan === 'gold' ? `the combo card that shows ${label} next to .COM / .NET / .VN in search results` : `the cart pop-up that offers ${label} free for the first year at checkout`;
+    if (short) return NOTE(`The bundle in ${planName(c.plan)} (${what}) is optional: if it does not fit your brand direction, we can leave it out, discuss it later and lower the package fee.`);
+    return P(`<b>The bundle is optional.</b> ${planName(c.plan)} includes ${what}, but it is not a must. If it does not fit the brand direction of ${label}, we can simply leave it out for now, discuss it together later, and lower the package fee accordingly.`);
+  }
+  // A personal note for one registry (set in the dashboard), shown as a highlighted box.
+  const callout = (c) => (c.note ? `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:640px;margin:4px 0 14px;background:#fff8e6;border-left:4px solid #f5b400;"><tr><td style="padding:12px 16px;font-family:${FONT};font-size:11.5pt;line-height:1.5;color:#1d1d1b;">${esc(c.note).replace(/\n/g, '<br>')}</td></tr></table>` : '');
   const ebLine = (k) => (k.eb ? `the ${k.pct}% early bird price applies to annual plans booked by ${k.ebTxt}` : 'prices are per 12 months');
 
   const TEMPLATES = {
@@ -234,7 +244,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
           P(`Thank you for being part of the Mat Bao MDF 2026 Program. As the year draws to a close, we have prepared a short report on how <b>${esc(c.label)}</b> performed at Mat Bao in 2026 (attached as PDF), together with our recommendation for <b>MDF 2027</b>, which opens for registration on <b>${k.startTxt}</b>.`),
           ...(c.results && c.results.length ? [H('', `${esc(c.label)} at Mat Bao in 2026`), UL(c.results)] : []),
           H('', 'What’s new in MDF 2027: Beyond Visibility, Guaranteed Growth'), P('Every 2027 package is measured by new registrations of your TLD, not just impressions:'), whatsNew(),
-          H('', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '',
+          H('', `Your personalized offer for ${esc(c.label)}`), c.why ? P(c.why) : '', bundleNote(c), callout(c),
           TABLE(TH('Package (offer)') + TH('Qty', 1) + TH('Cost / 12 months', 1) + TH(k.eb ? `Early bird (${k.pct}% off)` : 'Early bird', 1) + TH('Total', 1), [
             `<tr>${TD(`<b>${planName(c.plan)}</b> · ${esc(c.label)}`)}${TD('1', 1)}${TD(money(pl.list), 1)}${TD(k.eb ? 'Yes, until ' + k.ebShort : '–', 1)}${TD(money(price), 1, 1)}</tr>`,
             `<tr>${TD('TOTAL', 0, 1, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD('', 1, 0, '#f3f5fb')}${TD(money(price), 1, 1, '#f3f5fb')}</tr>`]),
@@ -260,7 +270,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: 'Mat Bao MDF 2027: Registration Is Now Open',
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`Registration for the <b>Mat Bao MDF 2027 Program</b> opened on ${k.startDay}. Slots are confirmed first come, first served${k.eb ? `, and the ${k.pct}% early bird price runs until <b>${k.ebDay}</b>` : ''}.`),
-          rec, H('', 'Slots available today'), slotsTable(k, true), H('', 'Book in a few minutes'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
+          rec, bundleNote(c, true), callout(c), H('', 'Slots available today'), slotsTable(k, true), H('', 'Book in a few minutes'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('Happy to answer any questions or walk you through the packages on a short call.')]
       };
     },
@@ -268,7 +278,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: `Mat Bao MDF 2027: Early Bird Price Ends ${k.ebDay}`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`A quick reminder: the <b>${k.pct}% early bird price</b> for Mat Bao MDF 2027 ends on <b>${k.ebDay}</b> (GMT+7). After that, annual plans return to the list price.`),
-          c.plan ? P(`For ${esc(c.label)} we recommend <b>${planName(c.plan)}</b>: ${money(k.plans[c.plan].eb)} instead of ${money(k.plans[c.plan].list)} per year.`) : '',
+          c.plan ? P(`For ${esc(c.label)} we recommend <b>${planName(c.plan)}</b>: ${money(k.plans[c.plan].eb)} instead of ${money(k.plans[c.plan].list)} per year.`) : '', bundleNote(c, true), callout(c),
           H('', 'Prices and slots left today'), slotsTable(k, true), H('', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('If anything is holding you back, reply to this email and we will help.')]
       };
@@ -277,7 +287,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       return {
         subject: `Mat Bao MDF 2027: Registration Closes ${k.endDay}`,
         inner: [P(`<b>${esc(c.greet)}</b>`), P(`Registration for <b>Mat Bao MDF 2027</b> closes on <b>${k.endDay}</b> (GMT+7). The programme runs from January to December 2027, and slots that are not booked by then will not reopen this year.`),
-          H('', 'Slots left today'), slotsTable(k, true), H('', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
+          bundleNote(c, true), H('', 'Slots left today'), slotsTable(k, true), H('', 'How to book'), howTo(c.tlds && c.tlds[0] ? '<b>' + esc(c.tlds[0]) + '</b>' : 'your TLD'),
           P('We would be glad to have you with us in 2027. Reply to this email if you have any questions.')]
       };
     },
@@ -348,6 +358,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
       group: x.group === 'partner' ? 'partner' : 'new', tz: TZ[x.tz] ? x.tz : 'asia', greet: String(x.greet || '').trim().slice(0, 160) || 'Dear Registry team,',
       to: cleanPeople(x.to), cc: cleanPeople(x.cc), plan: ['diamond', 'gold', 'silver'].includes(x.plan) ? x.plan : '',
       results: (Array.isArray(x.results) ? x.results : []).map((r) => String(r).slice(0, 600)).slice(0, 4), why: String(x.why || '').slice(0, 600),
+      note: String(x.note || '').slice(0, 1200),
       pdf: String(x.pdf || '').replace(/[^\w-]/g, '').slice(0, 30),
       pdfToken: /^[\w-]{20,64}$/.test(String(x.pdfToken || '')) ? x.pdfToken : (x.pdf ? crypto.randomBytes(18).toString('base64url') : '')
     };

@@ -519,7 +519,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     return h;
   }
   function openContact(id) {
-    var c = D.outreach.contacts.filter(function (x) { return x.id === id; })[0] || { name: '', label: '', tlds: [], group: 'new', tz: 'asia', greet: '', to: [], cc: [], plan: '', results: [], why: '' };
+    var c = D.outreach.contacts.filter(function (x) { return x.id === id; })[0] || { name: '', label: '', tlds: [], group: 'new', tz: 'asia', greet: '', to: [], cc: [], plan: '', results: [], why: '', note: '' };
     var ppl = function (l) { return l.map(function (x) { return (x.name ? x.name + ' <' + x.email + '>' : x.email); }).join('\n'); };
     var h = '<div class="drawer-bg" data-close></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" tabindex="-1"><button class="x" data-close aria-label="Đóng">×</button>' +
       '<h2 id="dr-title">' + (c.id ? esc(c.name) : 'Thêm registry') + '</h2><form id="ct-form" style="display:grid;gap:12px;margin-top:14px">' +
@@ -532,13 +532,14 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       '<label class="f">Múi giờ<select class="i" name="tz">' + Object.keys(TZN).map(function (k) { return '<option value="' + k + '"' + (c.tz === k ? ' selected' : '') + '>' + TZN[k] + '</option>'; }).join('') + '</select></label></div>' +
       '<label class="f">Gói đề xuất<select class="i" name="plan"><option value="">Không</option>' + PLANS.map(function (k) { return '<option value="' + k + '"' + (c.plan === k ? ' selected' : '') + '>' + k.toUpperCase() + '</option>'; }).join('') + '</select></label>' +
       '<label class="f">Lý do đề xuất (trong Package Offer)<textarea class="i" name="why" rows="3">' + esc(c.why) + '</textarea></label>' +
+      '<label class="f">Lời nhắn riêng (khung nổi bật trong email Package Offer, mở đăng ký, early bird)<textarea class="i" name="note" rows="4">' + esc(c.note || '') + '</textarea></label>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Lưu</button>' + (c.id ? '<button class="btn bad" type="button" data-cdel>Xoá</button>' : '') + '</div></form></aside>';
     var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
     root.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
     var parse = function (v) { return v.split('\n').map(function (l) { var m = l.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/); return m ? { name: m[1], email: m[2] } : { name: '', email: l.trim() }; }).filter(function (x) { return x.email; }); };
     root.querySelector('#ct-form').addEventListener('submit', function (e) {
       e.preventDefault(); var f = e.target;
-      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value })
+      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value, note: f.note.value })
         .then(function () { closeDrawer(); toast('Đã lưu'); load(); }).catch(function (er) { toast(er.message, true); });
     });
     var del = root.querySelector('[data-cdel]');
