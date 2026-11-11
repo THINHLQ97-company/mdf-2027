@@ -259,7 +259,7 @@ ${inner}${P('Warm regards,', 'font-weight:bold;margin-top:18px;')}</div>${SIGNAT
           offerTable,
           NOTE(`${alt ? 'Fees are per 12 months, January to December 2027' : planName(c.plan) + ' has ' + pl.slots + ' slots in 2027'}. Half-year billing is also available; ${ebLine(k)}.`),
           H('', 'Key dates'), datesBox(k), H('', 'How to register'), howTo('<b>' + esc((c.tlds && c.tlds[0]) || 'your TLD') + '</b>'),
-          ...(c.closing ? paras(c.closing).map((x) => x.replace('<p style="', '<p style="font-weight:bold;')) : [P(`Let’s keep growing ${esc(c.label)} in Vietnam together in 2027!`, 'font-weight:bold;')])]
+          ...(c.closing ? paras(c.closing) : [P(`Let’s keep growing ${esc(c.label)} in Vietnam together in 2027!`, 'font-weight:bold;')])]
       };
     },
     invite(c, k) {
