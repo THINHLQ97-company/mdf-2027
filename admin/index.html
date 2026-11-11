@@ -510,7 +510,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
     }).join('') + '</div>';
     h += '<section class="panel"><h2>Danh sách registry (' + o.contacts.length + ')</h2><div class="table-wrap" style="border:0"><table><thead><tr><th>Registry</th><th>Nhóm</th><th>Múi giờ</th><th>Người nhận</th><th>Gói đề xuất</th><th>MDF 2027</th><th></th></tr></thead><tbody>' +
       (o.contacts.length ? o.contacts.map(function (c) {
-        return '<tr><td><b>' + esc(c.name) + '</b><span class="s">' + esc(c.tlds.join(', ')) + (c.hasPdf ? ' · có PDF báo cáo' : '') + '</span></td><td>' + (c.group === 'partner' ? 'Đối tác 2026' : 'Registry mới') + '</td><td>' + esc(TZN[c.tz]) + '</td>' +
+        return '<tr><td><b>' + esc(c.name) + '</b>' + (c.paused ? ' <span class="pill st-on_hold">Tạm dừng</span>' : '') + '<span class="s">' + esc(c.tlds.join(', ')) + (c.hasPdf ? ' · có PDF báo cáo' : '') + '</span></td><td>' + (c.group === 'partner' ? 'Đối tác 2026' : 'Registry mới') + '</td><td>' + esc(TZN[c.tz]) + '</td>' +
           '<td class="who-list">' + (c.to.length ? c.to.map(function (x) { return esc(x.email); }).join('<br>') : '<span class="pill st-rejected">Chưa có</span>') + (c.cc.length ? '<span class="s">CC: ' + esc(c.cc.map(function (x) { return x.email; }).join(', ')) + '</span>' : '') + '</td>' +
           '<td>' + (c.plan ? '<span class="plan-name ' + c.plan + '">' + c.plan.toUpperCase() + '</span>' : '–') + '</td>' +
           '<td>' + (c.registered.length ? c.registered.map(function (r) { return '<span class="pill st-confirmed">' + esc(r.tld) + ' ' + esc(r.plan.toUpperCase()) + '</span>'; }).join(' ') : '<span class="hint">Chưa đăng ký</span>') + '</td>' +
@@ -533,13 +533,14 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       '<label class="f">Gói đề xuất<select class="i" name="plan"><option value="">Không</option>' + PLANS.map(function (k) { return '<option value="' + k + '"' + (c.plan === k ? ' selected' : '') + '>' + k.toUpperCase() + '</option>'; }).join('') + '</select></label>' +
       '<label class="f">Lý do đề xuất (trong Package Offer)<textarea class="i" name="why" rows="3">' + esc(c.why) + '</textarea></label>' +
       '<label class="f">Lời nhắn riêng (khung nổi bật trong email Package Offer, mở đăng ký, early bird)<textarea class="i" name="note" rows="4">' + esc(c.note || '') + '</textarea></label>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" name="paused"' + (c.paused ? ' checked' : '') + '> Tạm dừng: không đưa registry này vào các đợt gửi (đang trao đổi riêng)</label>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Lưu</button>' + (c.id ? '<button class="btn bad" type="button" data-cdel>Xoá</button>' : '') + '</div></form></aside>';
     var root = $('#drawer-root'); root.innerHTML = h; root.querySelector('.drawer').focus();
     root.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
     var parse = function (v) { return v.split('\n').map(function (l) { var m = l.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/); return m ? { name: m[1], email: m[2] } : { name: '', email: l.trim() }; }).filter(function (x) { return x.email; }); };
     root.querySelector('#ct-form').addEventListener('submit', function (e) {
       e.preventDefault(); var f = e.target;
-      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value, note: f.note.value })
+      api('outreach/contact', { id: c.id, name: f.name.value, label: f.label.value, tlds: f.tlds.value, greet: f.greet.value, to: parse(f.to.value), cc: parse(f.cc.value), group: f.group.value, tz: f.tz.value, plan: f.plan.value, why: f.why.value, note: f.note.value, paused: f.paused.checked })
         .then(function () { closeDrawer(); toast('Đã lưu'); load(); }).catch(function (er) { toast(er.message, true); });
     });
     var del = root.querySelector('[data-cdel]');
