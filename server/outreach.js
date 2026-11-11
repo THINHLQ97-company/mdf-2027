@@ -33,7 +33,7 @@ const WAVES = [
 ];
 
 /* ── small binary writers: .msg (MS-OXMSG via CFB), .eml, .zip ── */
-const T = { I32: 0x0003, BOOL: 0x000B, STR: 0x001F, BIN: 0x0102 };
+const T = { I32: 0x0003, BOOL: 0x000B, STR: 0x001F, BIN: 0x0102, TIME: 0x0040 };
 const tagHex = (id, type) => (((id << 16) | type) >>> 0).toString(16).toUpperCase().padStart(8, '0');
 function propsBlock(props) {
   const entries = [], streams = {};
@@ -43,13 +43,21 @@ function propsBlock(props) {
     e.writeUInt32LE(((id << 16) | type) >>> 0, 0); e.writeUInt32LE(6, 4);
     if (type === T.I32) e.writeInt32LE(value | 0, 8);
     else if (type === T.BOOL) e.writeUInt16LE(value ? 1 : 0, 8);
+    else if (type === T.TIME) e.writeBigUInt64LE(BigInt(value) * 10000n + 116444736000000000n, 8);
     else {
+      // As Outlook writes it: the string stream ends with its UTF-16 terminator and the size field equals the stream length.
       const buf = type === T.STR ? Buffer.concat([Buffer.from(String(value), 'utf16le'), Buffer.alloc(2)]) : Buffer.from(value);
       streams['__substg1.0_' + tagHex(id, type)] = buf; e.writeUInt32LE(buf.length, 8);
     }
     entries.push(e);
   }
   return { fixed: Buffer.concat(entries), streams };
+}
+// One-off entry ID (MS-OXCDATA 2.2.5.1): Unicode, SMTP, plain-text/MIME preference as Outlook writes it.
+function oneOffEntryId(name, email) {
+  const uid = Buffer.from('812B1FA4BEA310199D6E00DD010F5402', 'hex');
+  const z = (t) => Buffer.concat([Buffer.from(t, 'utf16le'), Buffer.alloc(2)]);
+  return Buffer.concat([Buffer.alloc(4), uid, Buffer.alloc(2), Buffer.from([0x01, 0x80]), z(name), z('SMTP'), z(email)]);
 }
 function writeMsg(m) {
   const cfb = CFB.utils.cfb_new();
@@ -60,8 +68,8 @@ function writeMsg(m) {
   const top = propsBlock([
     [0x001A, T.STR, 'IPM.Note'], [0x0037, T.STR, m.subject], [0x0E1D, T.STR, m.subject], [0x003D, T.STR, ''],
     [0x1000, T.STR, m.text], [0x1013, T.BIN, Buffer.from(m.html, 'utf8')], [0x3FDE, T.I32, 65001],
-    [0x0E07, T.I32, 8 | (atts.some((a) => !a.cid) ? 0x10 : 0)], [0x0E1B, T.BOOL, atts.length > 0], [0x340D, T.I32, 0x00040000],
-    [0x0017, T.I32, 1], [0x0036, T.I32, 0], [0x0E04, T.STR, disp(m.to)], [0x0E03, T.STR, disp(m.cc)], [0x0E02, T.STR, '']
+    [0x0E07, T.I32, 1 | 8 | (atts.some((a) => !a.cid) ? 0x10 : 0)], [0x0E1B, T.BOOL, atts.length > 0], [0x340D, T.I32, 0x00040000],
+    [0x0017, T.I32, 1], [0x0036, T.I32, 0], [0x0070, T.STR, m.subject], [0x3007, T.TIME, Date.now()], [0x3008, T.TIME, Date.now()], [0x0E04, T.STR, disp(m.to)], [0x0E03, T.STR, disp(m.cc)], [0x0E02, T.STR, '']
   ]);
   const head = Buffer.alloc(32);
   head.writeUInt32LE(recips.length, 8); head.writeUInt32LE(atts.length, 12); head.writeUInt32LE(recips.length, 16); head.writeUInt32LE(atts.length, 20);
@@ -70,8 +78,12 @@ function writeMsg(m) {
   for (const s of ['00020102', '00030102', '00040102']) add('/__nameid_version1.0/__substg1.0_' + s, Buffer.alloc(0));
   recips.forEach((r, i) => {
     const dir = '/__recip_version1.0_#' + i.toString(16).toUpperCase().padStart(8, '0');
-    const p = propsBlock([[0x0C15, T.I32, r.type], [0x3000, T.I32, i], [0x0FFE, T.I32, 6], [0x3900, T.I32, 0], [0x3001, T.STR, r.name || r.email],
-      [0x5FF6, T.STR, r.name || r.email], [0x3002, T.STR, 'SMTP'], [0x3003, T.STR, r.email], [0x39FE, T.STR, r.email], [0x3A40, T.BOOL, false]]);
+    const name = r.name || r.email, eid = oneOffEntryId(name, r.email);
+    // A resolved SMTP recipient as Outlook writes it: one-off entry ID, search key and the sendable flag.
+    const p = propsBlock([[0x0C15, T.I32, r.type], [0x3000, T.I32, i], [0x0FFE, T.I32, 6], [0x3900, T.I32, 0], [0x3001, T.STR, name],
+      [0x5FF6, T.STR, name], [0x3A20, T.STR, name], [0x3002, T.STR, 'SMTP'], [0x3003, T.STR, r.email], [0x39FE, T.STR, r.email], [0x3A40, T.BOOL, false],
+      [0x0FFF, T.BIN, eid], [0x5FF7, T.BIN, eid], [0x0FF9, T.BIN, eid], [0x300B, T.BIN, Buffer.from('SMTP:' + r.email.toUpperCase() + '\0', 'ascii')],
+      [0x5FFD, T.I32, 1], [0x5FFF, T.I32, 0], [0x5FDF, T.I32, i], [0x0E0F, T.BOOL, true], [0x0FF6, T.BIN, crypto.randomBytes(4)]]);
     add(dir + '/__properties_version1.0', Buffer.concat([Buffer.alloc(8), p.fixed]));
     for (const [n, b] of Object.entries(p.streams)) add(dir + '/' + n, b);
   });
