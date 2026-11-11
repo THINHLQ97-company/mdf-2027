@@ -179,46 +179,48 @@
   var PROGRAM = { state: 'open', startAt: '2026-11-21T00:00:00+07:00', endAt: '2026-12-21T23:59:59+07:00', live: false };
   var PROGRAM_RUNS = new Date('2027-01-01T00:00:00+07:00');
 
-  /* ───────────── Timeline: opens → early bird ends → closes → programme runs ───────────── */
+  /* ───────────── Key dates: one line under the hero countdown, one card beside the booking form ───────────── */
   function dayLabel(d) { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Asia/Ho_Chi_Minh' }); }
-  function daysUntil(t) { return Math.max(0, Math.ceil((t - Date.now()) / 864e5)); }
-  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
-  function timelineHtml(compact) {
-    var t0 = Date.parse(PROGRAM.startAt), tEb = EARLY_BIRD_DEADLINE.getTime(), tEnd = Date.parse(PROGRAM.endAt), t1 = PROGRAM_RUNS.getTime(), now = Date.now();
-    var hasEb = tEb > t0 && EARLY_DISCOUNT > 0;
-    var pct = Math.round(EARLY_DISCOUNT * 100);
-    // Milestones are evenly spaced so labels never collide; time between two milestones fills that gap linearly.
-    var stops = hasEb ? [t0, tEb, tEnd, t1] : [t0, tEnd, t1];
-    var pos = function (t) {
-      if (t <= stops[0]) return 0;
-      for (var k = 1; k < stops.length; k++) if (t <= stops[k]) return ((k - 1) + (t - stops[k - 1]) / (stops[k] - stops[k - 1])) / (stops.length - 1) * 100;
-      return 100;
-    };
-    var status, cls = '';
-    if (now < t0) status = 'Registration opens in <b>' + plural(daysUntil(t0), 'day') + '</b>' + (hasEb ? ' · early bird −' + pct + '% for the first ' + plural(Math.round((tEb - t0) / 864e5), 'day') : '');
-    else if (now <= tEb && hasEb && now <= tEnd) { status = 'Early bird −' + pct + '% ends in <b>' + plural(daysUntil(tEb), 'day') + '</b> · ' + dayLabel(tEb); cls = ' eb'; }
-    else if (now <= tEnd) status = 'Registration open · closes in <b>' + plural(daysUntil(tEnd), 'day') + '</b>';
-    else if (now < t1) status = 'Registration closed · programme starts ' + dayLabel(t1) + ' 2027';
-    else status = 'MDF Program 2027 is running';
-    var ms = [
-      { t: t0, d: dayLabel(t0), l: 'Registration opens', s: 'Opens' },
-      hasEb ? { t: tEb, d: dayLabel(tEb), l: 'Early bird ends', s: '−' + pct + '% ends', eb: 1 } : null,
-      { t: tEnd, d: dayLabel(tEnd), l: 'Registration closes', s: 'Closes' },
-      { t: t1, d: 'Jan 2027', l: 'Programme starts', s: 'Starts' }
-    ].filter(Boolean);
-    var fill = now <= t0 ? 0 : pos(now);
-    return '<div class="mdf-tl' + (compact ? ' compact' : '') + cls + '" role="group" aria-label="MDF 2027 timeline">' +
-      '<p class="tl-status">' + status + '</p>' +
-      '<div class="tl-track">' +
-        (hasEb ? '<div class="tl-eb" style="left:0;width:' + pos(tEb) + '%"><span>Early bird −' + pct + '% · ' + dayLabel(t0) + '–' + dayLabel(tEb) + '</span></div>' : '') +
-        '<div class="tl-fill" style="width:' + fill + '%"></div>' +
-        (now > t0 && now < t1 ? '<i class="tl-now" style="left:' + fill + '%" title="Today"></i>' : '') +
-        ms.map(function (m, i) {
-          var done = now >= m.t;
-          return '<div class="tl-m' + (m.eb ? ' is-eb' : '') + (done ? ' done' : '') + (i === 0 ? ' first' : '') + (i === ms.length - 1 ? ' last' : '') + '" style="left:' + pos(m.t) + '%"><i></i><b>' + m.d + '</b><span class="l">' + m.l + '</span><span class="s">' + m.s + '</span></div>';
-        }).join('') +
-      '</div></div>';
+  function daysLeft(t) { var n = Math.max(0, Math.ceil((t - Date.now()) / 864e5)); return n + (n === 1 ? ' day' : ' days'); }
+  function keyDates() {
+    var t0 = Date.parse(PROGRAM.startAt), tEb = EARLY_BIRD_DEADLINE.getTime(), tEnd = Date.parse(PROGRAM.endAt), now = Date.now();
+    var eb = tEb > t0 && EARLY_DISCOUNT > 0;
+    return { t0: t0, tEb: tEb, tEnd: tEnd, now: now, eb: eb, pct: Math.round(EARLY_DISCOUNT * 100) };
   }
+  // Hero: three dates on a hairline, the early-bird stretch in cyan. No box: it sits under the countdown like a caption.
+  function heroDatesHtml() {
+    var k = keyDates();
+    if (k.now > k.tEnd) return '';
+    var pts = [{ t: k.t0, l: 'Opens' }].concat(k.eb ? [{ t: k.tEb, l: 'Early bird ends', eb: 1 }] : [], [{ t: k.tEnd, l: 'Closes' }]);
+    var seg = k.eb ? 100 / (pts.length - 1) : 0;
+    return '<div class="hd" role="group" aria-label="Key dates">' +
+      (k.eb ? '<span class="hd-tag" style="left:0;width:' + seg + '%">Early bird −' + k.pct + '%</span>' : '') +
+      '<div class="hd-line">' + (k.eb ? '<i style="width:' + seg + '%"></i>' : '') + '</div>' +
+      '<ol>' + pts.map(function (p) {
+        return '<li class="' + (p.eb ? 'eb ' : '') + (k.now >= p.t ? 'past' : '') + '"><b>' + dayLabel(p.t) + '</b><span>' + p.l + '</span></li>';
+      }).join('') + '</ol></div>';
+  }
+  // Booking sidebar: a vertical list, the current step highlighted with what is left.
+  function sideDatesHtml() {
+    var k = keyDates();
+    var rows = [
+      { from: k.t0, to: k.t0, d: dayLabel(k.t0) + ' 2026', l: 'Registration opens', note: k.now < k.t0 ? 'in ' + daysLeft(k.t0) : '' },
+      k.eb ? { from: k.t0, to: k.tEb, d: dayLabel(k.t0) + ' – ' + dayLabel(k.tEb), l: 'Early bird: ' + k.pct + '% off annual plans', note: k.now >= k.t0 && k.now <= k.tEb ? daysLeft(k.tEb) + ' left' : '', eb: 1 } : null,
+      { from: k.tEnd, to: k.tEnd, d: dayLabel(k.tEnd) + ' 2026', l: 'Registration closes', note: k.now > (k.eb ? k.tEb : k.t0) && k.now <= k.tEnd ? 'in ' + daysLeft(k.tEnd) : '' },
+      { from: PROGRAM_RUNS.getTime(), to: PROGRAM_RUNS.getTime(), d: 'Jan – Dec 2027', l: 'Programme runs', note: '' }
+    ].filter(Boolean);
+    var current = -1;
+    rows.forEach(function (r, i) { if (current < 0 && k.now <= r.to) current = i; });
+    return '<strong>Key dates</strong><ol class="kd">' + rows.map(function (r, i) {
+      var st = i < current || current < 0 ? 'past' : (i === current ? 'now' : '');
+      return '<li class="' + st + (r.eb ? ' eb' : '') + '"><b>' + r.d + '</b><span>' + r.l + '</span>' + (r.note && i === current ? '<em>' + r.note + '</em>' : '') + '</li>';
+    }).join('') + '</ol>';
+  }
+  function renderTimelines() {
+    root.querySelectorAll('[data-tl="hero"]').forEach(function (el) { el.innerHTML = heroDatesHtml(); });
+    root.querySelectorAll('[data-tl="side"]').forEach(function (el) { el.innerHTML = sideDatesHtml(); });
+  }
+
   // Days / hours / minutes / seconds boxes, refreshed every second for every [data-countdown] on the page.
   function countdownHtml(iso) {
     var s = Math.max(0, Math.floor((Date.parse(iso) - Date.now()) / 1000));
@@ -231,9 +233,6 @@
       // Opening time reached: reload state from the server so the form unlocks by itself.
       if (Date.parse(el.getAttribute('data-countdown')) <= Date.now() && !el._done) { el._done = true; if (window.MDF_REFRESH) window.MDF_REFRESH(); else { PROGRAM.state = 'open'; renderForm(); } }
     });
-  }
-  function renderTimelines() {
-    root.querySelectorAll('[data-tl]').forEach(function (el) { el.innerHTML = timelineHtml(el.getAttribute('data-tl') === 'compact'); });
   }
   function money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
   function priceOf(p) { return isEarlyBird() ? p.list * (1 - EARLY_DISCOUNT) : p.list; }
@@ -481,7 +480,7 @@
     var el = document.getElementById('mdf-form');
     if (!el) return;
     if (bk.done) el.innerHTML = renderDone();
-    else el.innerHTML = '<div data-tl="compact">' + timelineHtml(true) + '</div>' + renderSteps() + '<div class="bk-body">' + [renderPlanStep, renderDetailsStep, renderReviewStep][bk.step]() + '</div>';
+    else el.innerHTML = renderSteps() + '<div class="bk-body">' + [renderPlanStep, renderDetailsStep, renderReviewStep][bk.step]() + '</div>';
     renderSummary();
   }
   function focusFirstError() {

@@ -794,62 +794,55 @@ body.ob-open { overflow: hidden; }
 .t-mdf-program .bk-line-bill .bk-hint, .t-mdf-program .bk-line-bill .bk-warn { margin: 0; font-size: 12px; }
 .t-mdf-program .bk-sum-lines .a small { font-size: 11px; opacity: .7; margin-left: 2px; }
 
-/* ── Timeline: opens → early bird ends → closes → programme starts ── */
-.t-mdf-program .hero-tl { position: fixed; left: 0; right: 0; top: 112px; z-index: 2; }
-.t-mdf-program .hero-tl .mdf-tl { max-width: 980px; margin: 0 auto; background: rgba(6, 10, 38, .55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-.t-mdf-program .mdf-page.active .hero-tl { animation: mdfTlIn .6s ease .7s both; }
-@keyframes mdfTlIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
-.t-mdf-program .mdf-tl { --tl-c: #22D3EE; --tl-v: #8B5CF6; padding: 12px 22px 40px; border-radius: 16px; background: rgba(6, 10, 38, .38); border: 1px solid rgba(127, 231, 255, .22); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 14px 40px rgba(2, 4, 20, .3); color: #fff; font-family: Poppins, Inter, sans-serif; }
-.t-mdf-program .mdf-tl .tl-status { margin: 0 0 34px; font-size: 14px; line-height: 20px; color: rgba(255, 255, 255, .85); }
-.t-mdf-program .mdf-tl .tl-status b { color: #fff; }
-.t-mdf-program .mdf-tl.eb .tl-status b { color: #7FE7FF; }
-.t-mdf-program .tl-track { position: relative; height: 6px; margin: 0 4px; border-radius: 99px; background: rgba(255, 255, 255, .18); }
-.t-mdf-program .tl-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: linear-gradient(90deg, var(--tl-c), var(--tl-v)); }
-.t-mdf-program .tl-eb { position: absolute; bottom: 12px; height: 20px; border-radius: 6px 6px 0 0; border: 1.5px solid #7FE7FF; border-bottom: 0; background: linear-gradient(180deg, rgba(127, 231, 255, .22), rgba(127, 231, 255, 0)); display: flex; align-items: flex-start; justify-content: center; }
-.t-mdf-program .tl-eb span { margin-top: -10px; white-space: nowrap; font-size: 11px; line-height: 16px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #0b1033; background: #7FE7FF; border-radius: 99px; padding: 1px 9px; }
-.t-mdf-program .tl-m { position: absolute; top: 3px; transform: translateX(-50%); text-align: center; width: 140px; }
-.t-mdf-program .tl-m.first { transform: none; text-align: left; margin-left: -4px; }
-.t-mdf-program .tl-m.last { transform: translateX(-100%); text-align: right; margin-left: 4px; }
-.t-mdf-program .tl-m i { display: block; width: 14px; height: 14px; margin: -7px auto 0; border-radius: 50%; background: #0b1033; border: 2px solid rgba(255, 255, 255, .7); }
-.t-mdf-program .tl-m.first i { margin-left: 0; } .t-mdf-program .tl-m.last i { margin-right: 0; }
-.t-mdf-program .tl-m.done i { background: var(--tl-c); border-color: #fff; }
-.t-mdf-program .tl-m.is-eb i { border-color: #7FE7FF; box-shadow: 0 0 0 4px rgba(127, 231, 255, .2); }
-.t-mdf-program .tl-m b { display: block; margin-top: 6px; font-size: 14px; line-height: 18px; color: #fff; }
-.t-mdf-program .tl-m span { display: block; font-size: 12px; line-height: 16px; color: rgba(255, 255, 255, .72); }
-.t-mdf-program .tl-m.is-eb b { color: #7FE7FF; }
-.t-mdf-program .tl-now { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255, 255, 255, .25), 0 0 14px rgba(255, 255, 255, .9); z-index: 1; }
-/* compact version at the top of the booking form */
-.t-mdf-program .mdf-tl.compact { padding: 10px 16px 38px; margin: 0 0 18px; border-radius: 14px; background: rgba(3, 6, 24, .35); box-shadow: none; }
-.t-mdf-program .mdf-tl.compact .tl-status { font-size: 13px; }
-.t-mdf-program .mdf-tl.compact .tl-m { width: 120px; }
-.t-mdf-program .mdf-tl.compact .tl-m b { font-size: 13px; }
-.t-mdf-program .mdf-tl.compact .tl-m span { font-size: 11px; }
-@media (max-height: 760px) and (min-width: 768px) { .t-mdf-program .hero-tl { top: 100px; } .t-mdf-program .hero-tl .mdf-tl .tl-m span { display: none; } .t-mdf-program .hero-tl .mdf-tl { padding-bottom: 26px; } }
-@media (max-width: 767px) {
-  .t-mdf-program .hero-tl { position: static; margin-top: 18px; padding: 0 0 24px; }
-  .t-mdf-program .mdf-tl { padding: 10px 14px 40px; }
-  .t-mdf-program .tl-m, .t-mdf-program .mdf-tl.compact .tl-m { width: 76px; }
-  .t-mdf-program .tl-m span, .t-mdf-program .mdf-tl.compact .tl-m span { font-size: 10px; line-height: 13px; }
-  .t-mdf-program .tl-m b { font-size: 12px; }
-  .t-mdf-program .tl-eb span { font-size: 10px; padding: 0 7px; }
-  .t-mdf-program .mdf-tl .tl-status { font-size: 13px; line-height: 19px; }
-}
-@media (prefers-reduced-motion: reduce) { .t-mdf-program .mdf-page.active .hero-tl { animation: none; } }
-.t-mdf-program .tl-m span.s { display: none; }
-.t-mdf-program .tl-eb { justify-content: flex-start; }
-.t-mdf-program .tl-eb span { margin-left: -2px; }
+/* ── Hero key dates: a caption line under the countdown ── */
+.t-mdf-program .hero-dates { width: 360px; max-width: 100%; margin: -96px auto 30px; }
+.t-mdf-program .mdf-page.active .hero-dates { animation: mdfFadeUp .7s ease .75s both; }
+@keyframes mdfFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.t-mdf-program .hd { position: relative; padding-top: 22px; font-family: Poppins, Inter, sans-serif; filter: drop-shadow(0 2px 8px rgba(2, 4, 20, .75)); }
+.t-mdf-program .hd-tag { position: absolute; top: 0; text-align: center; font-size: 11px; line-height: 14px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: #7FE7FF; }
+.t-mdf-program .hd-line { position: relative; height: 2px; margin: 0 6px; background: rgba(255, 255, 255, .35); border-radius: 2px; }
+.t-mdf-program .hd-line i { position: absolute; left: 0; top: -1px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, #7FE7FF, #22D3EE); box-shadow: 0 0 12px rgba(127, 231, 255, .7); }
+.t-mdf-program .hd ol { display: flex; justify-content: space-between; list-style: none; margin: 0; padding: 0; }
+.t-mdf-program .hd li { position: relative; flex: 1; text-align: center; padding-top: 12px; }
+.t-mdf-program .hd li:first-child { text-align: left; } .t-mdf-program .hd li:last-child { text-align: right; }
+.t-mdf-program .hd li::before { content: ''; position: absolute; top: -6px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #0b1033; border: 2px solid #fff; }
+.t-mdf-program .hd li:first-child::before { left: 6px; } .t-mdf-program .hd li:last-child::before { left: auto; right: 1px; }
+.t-mdf-program .hd li.eb::before, .t-mdf-program .hd li:first-child::before { border-color: #7FE7FF; }
+.t-mdf-program .hd li.past::before { background: #7FE7FF; }
+.t-mdf-program .hd b { display: block; font-size: 17px; line-height: 22px; font-weight: 600; color: #fff; }
+.t-mdf-program .hd li.eb b { color: #7FE7FF; }
+.t-mdf-program .hd span { display: block; font-size: 11px; line-height: 15px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
+@media (max-height: 760px) and (min-width: 768px) { .t-mdf-program .hero-dates { margin: -70px auto 18px; } .t-mdf-program .hd span { display: none; } }
+
+/* ── Booking sidebar: Key dates card ── */
+.t-mdf-program .kd { list-style: none; margin: 0; padding: 0; }
+.t-mdf-program .kd li { position: relative; padding: 0 0 18px 30px; }
+.t-mdf-program .kd li:last-child { padding-bottom: 0; }
+.t-mdf-program .kd li::before { content: ''; position: absolute; left: 0; top: 5px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: transparent; box-sizing: border-box; }
+.t-mdf-program .kd li::after { content: ''; position: absolute; left: 5px; top: 21px; bottom: 2px; width: 2px; background: rgba(255, 255, 255, .18); }
+.t-mdf-program .kd li:last-child::after { display: none; }
+.t-mdf-program .kd li.past::before { background: rgba(127, 231, 255, .55); border-color: transparent; }
+.t-mdf-program .kd li.past::after { background: rgba(127, 231, 255, .4); }
+.t-mdf-program .kd li.now::before { border-color: #7FE7FF; background: #7FE7FF; box-shadow: 0 0 0 5px rgba(127, 231, 255, .2); }
+.t-mdf-program .kd b { display: block; font: 600 15px/22px Poppins, Inter, sans-serif; color: #fff; }
+.t-mdf-program .kd span { display: block; font: 400 14px/20px Poppins, Inter, sans-serif; color: rgba(255, 255, 255, .72); }
+.t-mdf-program .kd li.past b, .t-mdf-program .kd li.past span { opacity: .6; }
+.t-mdf-program .kd li.eb b { color: #7FE7FF; }
+.t-mdf-program .kd li.past.eb b { color: #fff; }
+.t-mdf-program .kd em { display: inline-block; margin-top: 6px; padding: 2px 10px; border-radius: 99px; font: 600 12px/18px Poppins, Inter, sans-serif; font-style: normal; color: #0b1033; background: #7FE7FF; }
+
 /* Countdown to opening inside the booking form */
 .t-mdf-program .bk-cd { display: flex; gap: 10px; margin: 16px 0 14px; flex-wrap: wrap; }
 .t-mdf-program .bk-cd span { min-width: 72px; padding: 10px 8px; text-align: center; border-radius: 12px; background: rgba(3, 6, 24, .45); border: 1px solid rgba(127, 231, 255, .3); }
 .t-mdf-program .bk-cd b { display: block; font: 700 30px/36px Poppins, Inter, sans-serif; color: #7FE7FF; font-variant-numeric: tabular-nums; }
 .t-mdf-program .bk-cd i { display: block; font-style: normal; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: rgba(255, 255, 255, .7); }
 @media (max-width: 767px) {
-  .t-mdf-program .tl-m span.l { display: none; }
-  .t-mdf-program .tl-m span.s { display: block; }
-  .t-mdf-program .hero-tl { position: absolute; left: 16px; right: 16px; top: auto; bottom: 112px; margin: 0; padding: 0; }
+  .t-mdf-program .hero-dates { width: 100%; max-width: 340px; margin: 0 auto 22px; }
+  .t-mdf-program .hd b { font-size: 15px; }
+  .t-mdf-program .hd span { font-size: 10px; letter-spacing: .6px; }
   .t-mdf-program .bk-cd { gap: 6px; }
   .t-mdf-program .bk-cd span { min-width: 0; flex: 1; padding: 8px 4px; }
   .t-mdf-program .bk-cd b { font-size: 24px; line-height: 30px; }
   .t-mdf-program .bk-cd i { font-size: 9px; }
 }
-@media (max-width: 767px) and (max-height: 760px) { .t-mdf-program .hero-tl { display: none; } }
+@media (max-width: 767px) and (max-height: 700px) { .t-mdf-program .hd span { display: none; } }
