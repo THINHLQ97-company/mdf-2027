@@ -590,6 +590,41 @@ async function admin(req, res, url) {
     const csp = f.type.startsWith('text/html') ? { 'Content-Security-Policy': "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data:; connect-src 'none'" } : {};
     return send(res, 200, fs.readFileSync(f.path), Object.assign({ 'Content-Type': f.type, 'Content-Disposition': 'inline' }, csp));
   }
+  // Registration agreed directly with a registry (e.g. by email): reserve the slot, with custom price and obligation if needed.
+  if (p === '/admin/api/reg-manual' && req.method === 'POST') {
+    const b = await readJson(req);
+    const plan = String(b.plan || ''), billing = b.billing === 'half' ? 'half' : 'annual';
+    const tld = (() => { const x = String(b.tld || '').trim().toLowerCase(); return x ? (x[0] === '.' ? x : '.' + x) : ''; })();
+    const email = String(b.email || '').trim().toLowerCase();
+    const text = (v, max) => String(v || '').trim().slice(0, max);
+    if (!PLAN_KEYS.includes(plan)) return send(res, 400, { error: 'Chọn gói.' });
+    if (!/^\.[\p{L}\p{N}-]{2,63}$/u.test(tld)) return send(res, 400, { error: 'TLD không hợp lệ.' });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return send(res, 400, { error: 'Email liên hệ không hợp lệ.' });
+    if (text(b.registry, 120).length < 2 || text(b.contactName, 80).length < 2) return send(res, 400, { error: 'Nhập tên registry và người liên hệ.' });
+    const price = Number(b.price);
+    if (!(price > 0 && price < 100000)) return send(res, 400, { error: 'Nhập giá (USD).' });
+    if (db.registrations.some((r) => ['on_hold', 'confirmed', 'waitlist'].includes(r.status) && r.tlds.includes(tld))) return send(res, 409, { error: tld + ' đã có đăng ký đang hoạt động.' });
+    if (availability()[plan].available < 1) return send(res, 409, { error: 'Gói ' + plan.toUpperCase() + ' đã hết suất.' });
+    const st = db.settings, status = b.status === 'on_hold' ? 'on_hold' : 'confirmed', at = iso(now());
+    const custom = !!(b.noBundle || b.cartSuggestion || text(b.extraTerms, 600));
+    const r = {
+      id: crypto.randomUUID(), ref: nextRef(plan), groupId: crypto.randomUUID(), status, plan, billing, price: Math.round(price * 100) / 100,
+      earlyBird: billing === 'annual' && price < st.plans[plan].list,
+      registry: text(b.registry, 120), tlds: [tld], contactName: text(b.contactName, 80), jobTitle: text(b.jobTitle, 80), email, phone: text(b.phone, 40),
+      participated2026: b.participated2026 === true, notes: text(b.notes, 1000), createdAt: at, verifiedAt: at,
+      holdUntil: iso(now() + st.holdHours * 3600e3), obligationToken: token(), ip: 'admin', userAgent: 'dashboard',
+      payment: 'unpaid', contractSigned: false, internalNote: text(b.internalNote, 1000), manual: true,
+      obligation: custom ? emails.obligationSections(plan, { noBundle: !!b.noBundle, cartSuggestion: !!b.cartSuggestion, note: text(b.extraTerms, 600) }) : undefined,
+      history: [{ at, by: who, action: 'created in dashboard (agreed directly with the registry)' }]
+    };
+    if (status === 'confirmed') { r.confirmedAt = at; r.confirmedBy = who; r.history.push({ at, by: who, action: 'confirmed' }); }
+    db.registrations.push(r);
+    store.audit('manual registration', r.id, who, `${r.registry} · ${tld} · ${plan} · $${r.price}`);
+    store.save();
+    let mailed = null;
+    if (b.notify !== false) mailed = await sendMail(status === 'confirmed' ? emails.confirmed(r, st) : emails.received(r, st), r);
+    return send(res, 200, { ok: true, id: r.id, ref: r.ref, mailed, obligationUrl: status === 'confirmed' ? emails.obligationLink(r) : null });
+  }
   if (p === '/admin/api/export.csv' && req.method === 'GET') return send(res, 200, csv(), { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="mdf-2027-registrations.csv"' });
   if (p === '/admin/api/test-email' && req.method === 'POST') {
     const b = await readJson(req);

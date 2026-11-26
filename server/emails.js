@@ -95,12 +95,12 @@ ${rows.map(([k, v], i) => `<tr><td style="padding:11px 16px;${i ? `border-top:1p
 
   function obligationHtml(r, light) {
     const P = light ? Object.assign({}, C, { panel: '#ffffff', line: '#dfe4f5', ink: '#0b1440', body: '#1f274d', mute: '#5a6390', cyan: '#3b4bd8', cyan2: '#2f5bea' }) : C;
-    const sections = O.plans[r.plan] || [];
+    const sections = r.obligation || O.plans[r.plan] || [];
     const tld = r.tlds.join(', ');
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px;border:1px solid ${P.line};border-radius:12px;" bgcolor="${P.panel}"><tr><td style="padding:20px 20px 10px;">
 <div style="font:600 11px/16px ${FONT};letter-spacing:2px;text-transform:uppercase;color:${P.cyan};margin:0 0 8px;">Attach to your agreement</div>
 <div style="font:700 20px/28px ${FONT};color:${P.ink};">${esc(O.title)}</div>
-<div style="font:600 13px/20px ${FONT};color:${P.cyan};margin:2px 0 6px;">For ${esc(tld)} · ${esc(r.plan.toUpperCase())} plan · Ref ${esc(r.ref)}</div>
+<div style="font:600 13px/20px ${FONT};color:${P.cyan};margin:2px 0 6px;">For ${esc(tld)} · ${esc(r.plan.toUpperCase())} plan${r.obligation ? ' (custom terms)' : ''} · Ref ${esc(r.ref)}</div>
 <div style="font:400 12px/18px ${FONT};color:${P.mute};margin-bottom:6px;">${esc(O.program)} · Registrar: ${esc(O.registrar)} · Registry: ${esc(r.registry)} · Term: ${esc(O.term)}</div>
 ${sections.map((s) => `<div style="margin:16px 0 6px;padding-bottom:5px;border-bottom:1px solid ${P.line};font:600 14px/20px ${FONT};color:${P.cyan};">${esc(s.h)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${s.items.map((i) => `<tr><td width="18" valign="top" style="font:700 14px/22px ${FONT};color:${P.cyan2};">&#10003;</td><td style="padding:0 0 6px;font:400 14px/22px ${FONT};color:${P.body};">${esc(i.replace(/\{tld\}/g, tld))}</td></tr>`).join('')}</table>`).join('')}
@@ -128,6 +128,18 @@ ${regs.length > 1 ? `<tr><td colspan="2" style="${cell}border-top:1px solid ${C.
 
   return {
     obligationHtml, obligationLink, layout,
+    // Standard obligation for a plan, optionally without the bundle and/or with the cart suggestion instead (custom deals).
+    obligationSections(plan, opts) {
+      opts = opts || {};
+      let out = JSON.parse(JSON.stringify(O.plans[plan] || []));
+      if (opts.noBundle) out = out.filter((x) => !/^Bundle/i.test(x.h));
+      if (opts.cartSuggestion) out.splice(Math.min(out.length, 4), 0, { h: 'Cart suggestion (in place of the bundle)', items: [
+        'When a customer has a new .com, .net or .vn domain in the cart, the exactly matching {tld} domain is suggested on the order page, above the Google Workspace offer, at the Registry’s standard retail price.',
+        'The suggestion is shown throughout the term and the customer adds it with one click. No promotional pricing is required from the Registry.'
+      ] });
+      if (opts.note) out.push({ h: 'Additional terms', items: [String(opts.note)] });
+      return out;
+    },
 
     // One-time code for the dashboard. The code is in the body only, never in the subject or logs.
     adminOtp(code, purpose, ip, to) {
